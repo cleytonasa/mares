@@ -1,0 +1,6 @@
+{
+  "name": "Sistema de Controle de Marés - Areia Branca & Macau",
+  "description": "Painel náutico de monitoramento de marés DHN 2026, cálculo de calado e controle de acesso a barras marítimas de Areia Branca (TERMISA) e Macau - RN com meteorologia em tempo real.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
