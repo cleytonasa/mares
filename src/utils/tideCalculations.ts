@@ -33,12 +33,12 @@ export function parseTideDate(year: number, month: number, day: number, timeStr:
   return date;
 }
 
-// Get continuous chronological list of tide events spanning 3 days around target date
+// Get continuous chronological list of tide events spanning around target date
 export function getChronologicalEvents(targetDate: Date, port: PortConfig): AbsoluteTidePoint[] {
   const result: AbsoluteTidePoint[] = [];
 
-  // Query 3 days: yesterday, today, tomorrow
-  for (let offset = -1; offset <= 1; offset++) {
+  // Query 5 days (-2 to +2) to ensure full 48h interpolation coverage with previous and next bounds
+  for (let offset = -2; offset <= 3; offset++) {
     const d = new Date(targetDate);
     d.setDate(d.getDate() + offset);
 
@@ -164,6 +164,31 @@ export function get24hTideCurve(referenceDate: Date, port: PortConfig, pointsCou
       timestamp: d.getTime(),
       height: state.currentHeight,
       depth: state.currentWaterDepth,
+    });
+  }
+
+  return points;
+}
+
+// Generate 48-hour continuous curve points for chart rendering (Today & Next Day)
+export function get48hTideCurve(referenceDate: Date, port: PortConfig, pointsCount = 192) {
+  const startOfDay = new Date(referenceDate);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const points: { time: string; timestamp: number; height: number; depth: number; date: Date; isNextDay: boolean }[] = [];
+
+  for (let i = 0; i <= pointsCount; i++) {
+    const d = new Date(startOfDay.getTime() + (i * 48 * 60 * 60 * 1000) / pointsCount);
+    const state = calculateCurrentTide(d, port);
+    const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const isNextDay = d.getDate() !== startOfDay.getDate() || d.getTime() >= startOfDay.getTime() + 24 * 60 * 60 * 1000;
+    points.push({
+      time: timeStr,
+      timestamp: d.getTime(),
+      height: state.currentHeight,
+      depth: state.currentWaterDepth,
+      date: d,
+      isNextDay,
     });
   }
 

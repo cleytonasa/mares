@@ -1,19 +1,17 @@
 import React from 'react';
-import { Anchor, Compass, Bell, FileText, Map, Table, Sliders, Waves, Ship, MapPin } from 'lucide-react';
-import { PortConfig, BarStatusType, CustomUserLocation } from '../types/maritime';
+import { Anchor, Compass, Bell, FileText, Map, Table, Waves, MapPin } from 'lucide-react';
+import { PortConfig, CustomUserLocation } from '../types/maritime';
 
 interface NavbarProps {
   activePort: PortConfig;
   onSelectPort: (portId: 'areia_branca' | 'macau') => void;
-  activeTab: 'dashboard' | 'table' | 'bar_control' | 'map' | 'vessels' | 'report';
-  onChangeTab: (tab: 'dashboard' | 'table' | 'bar_control' | 'map' | 'vessels' | 'report') => void;
+  activeTab: 'dashboard' | 'table' | 'map' | 'report';
+  onChangeTab: (tab: 'dashboard' | 'table' | 'map' | 'report') => void;
   currentTime: Date;
-  barStatus: BarStatusType;
   onOpenAlerts: () => void;
   unreadAlertCount: number;
   userLocation: CustomUserLocation;
   onOpenManualLocationModal: () => void;
-  vesselCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -22,45 +20,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   onChangeTab,
   currentTime,
-  barStatus,
   onOpenAlerts,
   unreadAlertCount,
   userLocation,
   onOpenManualLocationModal,
-  vesselCount = 8,
 }) => {
-  const getStatusBadge = (status: BarStatusType) => {
-    switch (status) {
-      case 'OPEN':
-        return {
-          bg: 'bg-emerald-500/15 border-emerald-500/40 text-emerald-700 dark:text-emerald-300',
-          dot: 'bg-emerald-500 animate-pulse',
-          label: 'BARRA ABERTA',
-        };
-      case 'CAUTION':
-        return {
-          bg: 'bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300',
-          dot: 'bg-amber-500',
-          label: 'ATENÇÃO / CALADO',
-        };
-      case 'RESTRICTED':
-        return {
-          bg: 'bg-orange-500/15 border-orange-500/40 text-orange-700 dark:text-orange-300',
-          dot: 'bg-orange-500',
-          label: 'BARRA RESTRITA',
-        };
-      case 'CLOSED':
-      default:
-        return {
-          bg: 'bg-rose-500/15 border-rose-500/40 text-rose-700 dark:text-rose-300',
-          dot: 'bg-rose-500 animate-ping',
-          label: 'BARRA FECHADA',
-        };
-    }
-  };
-
-  const badge = getStatusBadge(barStatus);
-
   return (
     <header className="bg-slate-900 text-slate-100 border-b border-slate-800 sticky top-0 z-40 shadow-lg">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
@@ -99,12 +63,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="font-bold text-cyan-300">{userLocation.dmsLat} {userLocation.dmsLng}</span>
             </button>
 
-            {/* Status indicator */}
-            <div className={`px-3 py-1 rounded-full border text-xs font-semibold flex items-center gap-2 ${badge.bg}`}>
-              <span className={`w-2 h-2 rounded-full ${badge.dot}`} />
-              <span className="font-mono tracking-wide">{badge.label}</span>
-            </div>
-
             {/* Live Clock */}
             <div className="hidden md:flex flex-col text-right font-mono bg-slate-800/60 px-3 py-1 rounded-lg border border-slate-700/60">
               <span className="text-xs font-bold text-slate-100">
@@ -120,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               id="btn-alert-settings"
               onClick={onOpenAlerts}
               className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700"
-              title="Configurações de Alertas de Maré e Barra"
+              title="Configurações de Alertas de Maré"
             >
               <Bell className="w-4 h-4" />
               {unreadAlertCount > 0 && (
@@ -175,35 +133,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Waves className="w-3.5 h-3.5" />
               Painel em Tempo Real
-            </button>
-
-            <button
-              id="nav-tab-vessels"
-              onClick={() => onChangeTab('vessels')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'vessels'
-                  ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-              }`}
-            >
-              <Ship className="w-3.5 h-3.5 text-cyan-400" />
-              Tráfego de Embarcações (AIS)
-              <span className="ml-1 px-1.5 py-0.2 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700/50 text-[10px] font-mono">
-                {vesselCount}
-              </span>
-            </button>
-
-            <button
-              id="nav-tab-bar-control"
-              onClick={() => onChangeTab('bar_control')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'bar_control'
-                  ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-              }`}
-            >
-              <Sliders className="w-3.5 h-3.5" />
-              Controle de Barra & Calado
             </button>
 
             <button

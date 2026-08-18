@@ -1,0 +1,12 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Se o arquivo existir na pasta dist, redireciona internamente
+  RewriteCond %{REQUEST_URI} !^/dist/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.*)$ dist/$1 [L,QSA]
+
+  # Redireciona a raiz para dist/index.html
+  RewriteRule ^$ dist/index.html [L]
+</IfModule>

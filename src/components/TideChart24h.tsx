@@ -1,39 +1,56 @@
 import React, { useState } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Play, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { PortConfig } from '../types/maritime';
-import { get24hTideCurve, calculateCurrentTide } from '../utils/tideCalculations';
+import { get48hTideCurve, calculateCurrentTide } from '../utils/tideCalculations';
 import { getTidesForDay } from '../data/tideData2026';
 
-interface TideChart24hProps {
+interface TideChart48hProps {
   port: PortConfig;
   selectedDate: Date;
   onChangeDate: (newDate: Date) => void;
   currentTime: Date;
-  vesselDraft?: number;
   onSelectTime?: (time: Date) => void;
 }
 
-export const TideChart24h: React.FC<TideChart24hProps> = ({
+export const TideChart24h: React.FC<TideChart48hProps> = ({
   port,
   selectedDate,
   onChangeDate,
   currentTime,
-  vesselDraft = 3.2,
   onSelectTime,
 }) => {
-  const [hoveredPoint, setHoveredPoint] = useState<{ time: string; height: number; depth: number; x: number; y: number } | null>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    dateStr: string;
+    time: string;
+    height: number;
+    depth: number;
+    x: number;
+    y: number;
+    rawDate: Date;
+  } | null>(null);
 
-  const year = selectedDate.getFullYear();
-  const month = selectedDate.getMonth() + 1;
-  const day = selectedDate.getDate();
+  // Day 1 (Reference Date)
+  const d1 = new Date(selectedDate);
+  const year1 = d1.getFullYear();
+  const month1 = d1.getMonth() + 1;
+  const day1 = d1.getDate();
+  const day1Tides = getTidesForDay(year1, month1, day1);
 
-  const dayTides = getTidesForDay(year, month, day);
-  const curvePoints = get24hTideCurve(selectedDate, port, 96); // 96 points = 15 min resolution
+  // Day 2 (Next Day)
+  const d2 = new Date(selectedDate);
+  d2.setDate(d2.getDate() + 1);
+  const year2 = d2.getFullYear();
+  const month2 = d2.getMonth() + 1;
+  const day2 = d2.getDate();
+  const day2Tides = getTidesForDay(year2, month2, day2);
+
+  // 48h curve points (192 points = 15-minute resolution across 48h)
+  const curvePoints = get48hTideCurve(selectedDate, port, 192);
 
   // SVG dimensions
-  const svgWidth = 800;
-  const svgHeight = 260;
-  const padding = { top: 30, right: 30, bottom: 40, left: 45 };
+  const svgWidth = 900;
+  const svgHeight = 280;
+  const padding = { top: 35, right: 30, bottom: 45, left: 45 };
 
   const chartWidth = svgWidth - padding.left - padding.right;
   const chartHeight = svgHeight - padding.top - padding.bottom;
@@ -44,7 +61,7 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
   const scaleX = (fraction: number) => padding.left + fraction * chartWidth;
   const scaleY = (height: number) => padding.top + (1 - (height - minHeight) / (maxHeight - minHeight)) * chartHeight;
 
-  // Build SVG Path
+  // Build SVG Path for 48 Hours
   const pathD = curvePoints.reduce((acc, pt, idx) => {
     const fraction = idx / (curvePoints.length - 1);
     const x = scaleX(fraction);
@@ -54,30 +71,37 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
 
   const areaD = `${pathD} L ${scaleX(1)} ${scaleY(0)} L ${scaleX(0)} ${scaleY(0)} Z`;
 
-  // Calculate position of current time cursor if viewing today
+  // Midnight / Day separation X coordinate (exactly 24h in 48h = fraction 0.5)
+  const midnightX = scaleX(0.5);
+
+  // Calculate position of current time cursor within the 48h window
+  const startWindowTs = new Date(selectedDate).setHours(0, 0, 0, 0);
+  const endWindowTs = startWindowTs + 48 * 60 * 60 * 1000;
+  const currentTs = currentTime.getTime();
+  const isCurrentTimeInWindow = currentTs >= startWindowTs && currentTs <= endWindowTs;
+  const currentWindowFraction = (currentTs - startWindowTs) / (48 * 60 * 60 * 1000);
+  const currentCursorX = scaleX(Math.max(0, Math.min(1, currentWindowFraction)));
+
   const isViewingToday = selectedDate.toDateString() === currentTime.toDateString();
-  const currentDayFraction = (currentTime.getHours() * 60 + currentTime.getMinutes()) / 1440;
-  const currentCursorX = scaleX(currentDayFraction);
 
-  // Safe navigation threshold line (e.g. required tide height = vesselDraft + 0.5m FAQ - criticalShallowDepth)
-  const requiredTideHeight = Math.max(0, vesselDraft + 0.5 - port.criticalShallowDepth);
-  const thresholdY = scaleY(requiredTideHeight);
-
-  // Moon phase icon / label
-  const getMoonLabel = () => {
-    switch (dayTides.moonPhase) {
+  // Helper for Moon Phase label
+  const getMoonBadge = (phase: string) => {
+    switch (phase) {
       case 'full':
-        return '🌕 Lua Cheia (Maré de Sizígia Máxima)';
+        return { label: 'Lua Cheia', desc: 'Sizígia Máxima', icon: '🌕', color: 'text-amber-300' };
       case 'new':
-        return '🌑 Lua Nova (Maré de Sizígia)';
+        return { label: 'Lua Nova', desc: 'Sizígia', icon: '🌑', color: 'text-cyan-300' };
       case 'first_quarter':
-        return '🌓 Quarto Crescente (Quadratura)';
+        return { label: 'Q. Crescente', desc: 'Quadratura', icon: '🌓', color: 'text-blue-300' };
       case 'last_quarter':
-        return '🌗 Quarto Minguante (Quadratura)';
+        return { label: 'Q. Minguante', desc: 'Quadratura', icon: '🌗', color: 'text-blue-300' };
       default:
-        return 'Lua Intermediária';
+        return { label: 'Intermediária', desc: 'Maré Média', icon: '🌙', color: 'text-slate-300' };
     }
   };
+
+  const moon1 = getMoonBadge(day1Tides.moonPhase);
+  const moon2 = getMoonBadge(day2Tides.moonPhase);
 
   const handlePrevDay = () => {
     const d = new Date(selectedDate);
@@ -100,46 +124,50 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
     const clickX = ((e.clientX - rect.left) / rect.width) * svgWidth;
     const fraction = Math.max(0, Math.min(1, (clickX - padding.left) / chartWidth));
 
-    const totalMinutes = fraction * 1440;
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = Math.floor(totalMinutes % 60);
-    const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    const totalMinutes = fraction * 2880; // 48 hours = 2880 minutes
+    const testDate = new Date(startWindowTs + totalMinutes * 60 * 1000);
 
-    const testDate = new Date(selectedDate);
-    testDate.setHours(hours, minutes, 0, 0);
+    const hours = testDate.getHours();
+    const minutes = testDate.getMinutes();
+    const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    const dateStr = testDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
 
     const testState = calculateCurrentTide(testDate, port);
     const y = scaleY(testState.currentHeight);
 
     setHoveredPoint({
+      dateStr,
       time: timeStr,
       height: testState.currentHeight,
       depth: testState.currentWaterDepth,
       x: clickX,
       y,
+      rawDate: testDate,
     });
   };
 
   const handleSvgClick = () => {
     if (hoveredPoint && onSelectTime) {
-      const [h, m] = hoveredPoint.time.split(':').map(Number);
-      const newD = new Date(selectedDate);
-      newD.setHours(h, m, 0, 0);
-      onSelectTime(newD);
+      onSelectTime(hoveredPoint.rawDate);
     }
   };
 
   return (
-    <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 md:p-6 shadow-xl text-slate-100">
-      {/* Top Bar with Date Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800">
+    <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 md:p-6 shadow-xl text-slate-100 space-y-4">
+      {/* Top Bar with Date Navigation & 48h Indicator */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
         <div>
-          <h3 className="text-sm font-semibold tracking-wider text-cyan-400 uppercase flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Curva Harmônica de Variação (24 Horas)
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold tracking-wider text-cyan-400 uppercase flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Curva Harmônica de Variação (48 Horas)
+            </h3>
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/60 uppercase">
+              Dia Atual + Próximo Dia
+            </span>
+          </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Previsão contínua com interpolação senoidal oficial para {port.name}
+            Cronologia contínua com interpolação senoidal oficial para {port.name}
           </p>
         </div>
 
@@ -154,7 +182,7 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
           </button>
 
           <div className="px-3 py-1 bg-slate-950 rounded-lg border border-slate-800 text-xs font-mono font-bold text-slate-200">
-            {selectedDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+            {d1.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} ➔ {d2.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
           </div>
 
           <button
@@ -176,52 +204,155 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
         </div>
       </div>
 
-      {/* Lunar Phase & Day Events Banner */}
-      <div className="my-3 py-2 px-3 bg-slate-950/60 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2 font-medium text-slate-300">
-          <span>{getMoonLabel()}</span>
+      {/* 2-Day Chronological Events Header Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Day 1 Card */}
+        <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                {d1.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short' })}
+              </span>
+              {isViewingToday && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 font-mono">
+                  HOJE
+                </span>
+              )}
+            </div>
+            <span className="text-xs font-mono flex items-center gap-1 text-slate-300">
+              <span>{moon1.icon}</span>
+              <span className={moon1.color}>{moon1.label}</span>
+            </span>
+          </div>
+
+          {/* Events */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {day1Tides.events.map((evt, idx) => (
+              <span
+                key={idx}
+                className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold border ${
+                  evt.type === 'high'
+                    ? 'bg-cyan-950/70 text-cyan-300 border-cyan-700/50'
+                    : 'bg-slate-800/90 text-slate-300 border-slate-700'
+                }`}
+              >
+                {evt.type === 'high' ? 'PM' : 'BM'}: {evt.time} ({(evt.height * port.heightMultiplier).toFixed(2)}m)
+              </span>
+            ))}
+          </div>
         </div>
 
-        {/* Event chips */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {dayTides.events.map((evt, idx) => (
-            <span
-              key={idx}
-              className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold border ${
-                evt.type === 'high'
-                  ? 'bg-cyan-950/60 text-cyan-300 border-cyan-700/50'
-                  : 'bg-slate-800 text-slate-300 border-slate-700'
-              }`}
-            >
-              {evt.type === 'high' ? 'PM' : 'BM'}: {evt.time} ({evt.height.toFixed(2)}m)
+        {/* Day 2 Card */}
+        <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
+              {d2.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short' })}
             </span>
-          ))}
+            <span className="text-xs font-mono flex items-center gap-1 text-slate-300">
+              <span>{moon2.icon}</span>
+              <span className={moon2.color}>{moon2.label}</span>
+            </span>
+          </div>
+
+          {/* Events */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {day2Tides.events.map((evt, idx) => (
+              <span
+                key={idx}
+                className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold border ${
+                  evt.type === 'high'
+                    ? 'bg-cyan-950/70 text-cyan-300 border-cyan-700/50'
+                    : 'bg-slate-800/90 text-slate-300 border-slate-700'
+                }`}
+              >
+                {evt.type === 'high' ? 'PM' : 'BM'}: {evt.time} ({(evt.height * port.heightMultiplier).toFixed(2)}m)
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* SVG Chart Container */}
-      <div className="relative overflow-x-auto select-none">
+      <div className="relative overflow-x-auto select-none pt-2">
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          className="w-full h-auto cursor-crosshair"
+          className="w-full h-auto cursor-crosshair min-w-[700px]"
           onMouseMove={handleSvgMouseMove}
           onMouseLeave={() => setHoveredPoint(null)}
           onClick={handleSvgClick}
         >
           <defs>
             {/* Area Gradient */}
-            <linearGradient id="tideGradient" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="tideGradient48" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.45" />
               <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.15" />
               <stop offset="100%" stopColor="#1e1b4b" stopOpacity="0.0" />
             </linearGradient>
-
-            {/* Threshold Safe Gradient */}
-            <linearGradient id="safeWindowGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#10b981" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-            </linearGradient>
           </defs>
+
+          {/* Background Day Sections Shading */}
+          <rect
+            x={padding.left}
+            y={padding.top}
+            width={chartWidth / 2}
+            height={chartHeight}
+            fill="#0f172a"
+            opacity="0.2"
+          />
+          <rect
+            x={midnightX}
+            y={padding.top}
+            width={chartWidth / 2}
+            height={chartHeight}
+            fill="#1e293b"
+            opacity="0.1"
+          />
+
+          {/* Day Label Badges at Top of Chart Area */}
+          <text
+            x={scaleX(0.25)}
+            y={padding.top - 12}
+            fill="#38bdf8"
+            fontSize="11"
+            fontFamily="monospace"
+            fontWeight="bold"
+            textAnchor="middle"
+          >
+            {d1.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+          </text>
+          <text
+            x={scaleX(0.75)}
+            y={padding.top - 12}
+            fill="#94a3b8"
+            fontSize="11"
+            fontFamily="monospace"
+            fontWeight="bold"
+            textAnchor="middle"
+          >
+            {d2.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+          </text>
+
+          {/* Midnight 24h / 00h Vertical Divider Line */}
+          <line
+            x1={midnightX}
+            y1={padding.top - 20}
+            x2={midnightX}
+            y2={svgHeight - padding.bottom}
+            stroke="#0ea5e9"
+            strokeWidth="1.5"
+            strokeDasharray="4 3"
+          />
+          <text
+            x={midnightX}
+            y={padding.top - 8}
+            fill="#0ea5e9"
+            fontSize="9"
+            fontFamily="monospace"
+            fontWeight="bold"
+            textAnchor="middle"
+          >
+            00:00 (Virada de Dia)
+          </text>
 
           {/* Grid lines & Y Axis labels */}
           {[0, 1, 2, 3, 4].map((level) => {
@@ -234,7 +365,7 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
                   x2={svgWidth - padding.right}
                   y2={y}
                   stroke="#334155"
-                  strokeDasharray={level === 0 ? undefined : "3 3"}
+                  strokeDasharray={level === 0 ? undefined : '3 3'}
                   strokeWidth={level === 0 ? 1.5 : 0.8}
                 />
                 <text
@@ -273,74 +404,59 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
             NM {port.meanLevel}m
           </text>
 
-          {/* Calado / Safe Crossing Threshold Line */}
-          {requiredTideHeight > 0 && requiredTideHeight < maxHeight && (
-            <g>
-              <line
-                x1={padding.left}
-                y1={thresholdY}
-                x2={svgWidth - padding.right}
-                y2={thresholdY}
-                stroke="#eab308"
-                strokeDasharray="2 2"
-                strokeWidth="1.2"
-              />
-              <text
-                x={padding.left + 5}
-                y={thresholdY - 4}
-                fill="#facc15"
-                fontSize="9"
-                fontFamily="sans-serif"
-                fontWeight="bold"
-              >
-                Mínimo Seguro para Calado {vesselDraft.toFixed(1)}m ({requiredTideHeight.toFixed(2)}m)
-              </text>
-            </g>
-          )}
-
-          {/* X Axis Time Marks (Every 3 hours) */}
-          {[0, 3, 6, 9, 12, 15, 18, 21, 24].map((hour) => {
-            const fraction = hour / 24;
+          {/* X Axis Time Marks across 48 Hours (Every 6 hours) */}
+          {[
+            { hour: 0, day: 1, label: '00h' },
+            { hour: 6, day: 1, label: '06h' },
+            { hour: 12, day: 1, label: '12h' },
+            { hour: 18, day: 1, label: '18h' },
+            { hour: 24, day: 2, label: '00h' },
+            { hour: 30, day: 2, label: '06h' },
+            { hour: 36, day: 2, label: '12h' },
+            { hour: 42, day: 2, label: '18h' },
+            { hour: 48, day: 2, label: '24h' },
+          ].map((item, idx) => {
+            const fraction = item.hour / 48;
             const x = scaleX(fraction);
             return (
-              <g key={hour}>
+              <g key={idx}>
                 <line
                   x1={x}
                   y1={svgHeight - padding.bottom}
                   x2={x}
                   y2={svgHeight - padding.bottom + 5}
-                  stroke="#475569"
-                  strokeWidth="1"
+                  stroke={item.hour === 24 ? '#0ea5e9' : '#475569'}
+                  strokeWidth={item.hour === 24 ? 1.5 : 1}
                 />
                 <text
                   x={x}
                   y={svgHeight - padding.bottom + 18}
-                  fill="#94a3b8"
+                  fill={item.hour === 24 ? '#38bdf8' : '#94a3b8'}
                   fontSize="10"
                   fontFamily="monospace"
+                  fontWeight={item.hour === 24 ? 'bold' : 'normal'}
                   textAnchor="middle"
                 >
-                  {String(hour).padStart(2, '0')}:00
+                  {item.label}
                 </text>
               </g>
             );
           })}
 
-          {/* Tide Area and Line */}
-          <path d={areaD} fill="url(#tideGradient)" />
+          {/* 48h Tide Area and Line */}
+          <path d={areaD} fill="url(#tideGradient48)" />
           <path d={pathD} fill="none" stroke="#22d3ee" strokeWidth="2.5" strokeLinecap="round" />
 
-          {/* Tide Extremum Points (High / Low markers) */}
-          {dayTides.events.map((evt, idx) => {
+          {/* Day 1 Events Markers (0-24h) */}
+          {day1Tides.events.map((evt, idx) => {
             const [h, m] = evt.time.split(':').map(Number);
-            const fraction = (h * 60 + m) / 1440;
+            const fraction = (h * 60 + m) / 2880; // in 48h
             const x = scaleX(fraction);
             const adjustedHeight = evt.height * port.heightMultiplier;
             const y = scaleY(adjustedHeight);
 
             return (
-              <g key={idx}>
-                {/* Vertical drop line */}
+              <g key={`d1-${idx}`}>
                 <line
                   x1={x}
                   y1={y}
@@ -350,23 +466,19 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
                   strokeDasharray="2 2"
                   strokeWidth="0.8"
                 />
-
-                {/* Point circle */}
                 <circle
                   cx={x}
                   cy={y}
-                  r={evt.type === 'high' ? 5 : 4}
+                  r={evt.type === 'high' ? 4.5 : 3.5}
                   fill={evt.type === 'high' ? '#0284c7' : '#0f172a'}
                   stroke={evt.type === 'high' ? '#38bdf8' : '#94a3b8'}
-                  strokeWidth="2"
+                  strokeWidth="1.8"
                 />
-
-                {/* Label text */}
                 <text
                   x={x}
-                  y={evt.type === 'high' ? y - 10 : y + 16}
+                  y={evt.type === 'high' ? y - 8 : y + 14}
                   fill={evt.type === 'high' ? '#7dd3fc' : '#cbd5e1'}
-                  fontSize="10"
+                  fontSize="9"
                   fontFamily="monospace"
                   fontWeight="bold"
                   textAnchor="middle"
@@ -377,8 +489,50 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
             );
           })}
 
-          {/* Current Time Vertical Line */}
-          {isViewingToday && (
+          {/* Day 2 Events Markers (24-48h) */}
+          {day2Tides.events.map((evt, idx) => {
+            const [h, m] = evt.time.split(':').map(Number);
+            const fraction = (1440 + h * 60 + m) / 2880; // in 48h
+            const x = scaleX(fraction);
+            const adjustedHeight = evt.height * port.heightMultiplier;
+            const y = scaleY(adjustedHeight);
+
+            return (
+              <g key={`d2-${idx}`}>
+                <line
+                  x1={x}
+                  y1={y}
+                  x2={x}
+                  y2={svgHeight - padding.bottom}
+                  stroke={evt.type === 'high' ? '#38bdf8' : '#64748b'}
+                  strokeDasharray="2 2"
+                  strokeWidth="0.8"
+                />
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={evt.type === 'high' ? 4.5 : 3.5}
+                  fill={evt.type === 'high' ? '#0284c7' : '#0f172a'}
+                  stroke={evt.type === 'high' ? '#38bdf8' : '#94a3b8'}
+                  strokeWidth="1.8"
+                />
+                <text
+                  x={x}
+                  y={evt.type === 'high' ? y - 8 : y + 14}
+                  fill={evt.type === 'high' ? '#7dd3fc' : '#cbd5e1'}
+                  fontSize="9"
+                  fontFamily="monospace"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                >
+                  {evt.time} ({adjustedHeight.toFixed(2)}m)
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Real-time Current Position Marker (AGORA) */}
+          {isCurrentTimeInWindow && (
             <g>
               <line
                 x1={currentCursorX}
@@ -411,7 +565,7 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
             </g>
           )}
 
-          {/* Hover / Simulation vertical line and tooltip marker */}
+          {/* Hover Pointer Marker */}
           {hoveredPoint && (
             <g>
               <line
@@ -434,41 +588,39 @@ export const TideChart24h: React.FC<TideChart24hProps> = ({
           )}
         </svg>
 
-        {/* Hover Tooltip Card */}
+        {/* Hover Tooltip Floating Card */}
         {hoveredPoint && (
           <div
-            className="absolute z-20 pointer-events-none bg-slate-950/95 border border-cyan-500/50 p-2.5 rounded-xl shadow-2xl text-xs font-mono text-slate-200"
+            className="absolute z-20 pointer-events-none bg-slate-950/95 border border-cyan-500/50 p-2.5 rounded-xl shadow-2xl text-xs font-mono text-slate-200 backdrop-blur"
             style={{
-              left: `${Math.min(svgWidth - 160, Math.max(20, (hoveredPoint.x / svgWidth) * 100))}%`,
-              top: '15px',
+              left: `${Math.min(80, Math.max(10, (hoveredPoint.x / svgWidth) * 100))}%`,
+              top: '20px',
             }}
           >
-            <div className="text-cyan-400 font-bold flex items-center gap-1.5">
-              <span>🕒 Hora: {hoveredPoint.time}</span>
+            <div className="text-cyan-400 font-bold flex items-center justify-between gap-3">
+              <span>📅 {hoveredPoint.dateStr}</span>
+              <span>🕒 {hoveredPoint.time}</span>
             </div>
             <div className="mt-1 flex justify-between gap-3">
-              <span className="text-slate-400">Altura:</span>
+              <span className="text-slate-400">Altura da Maré:</span>
               <span className="text-white font-bold">{hoveredPoint.height.toFixed(2)} m</span>
             </div>
             <div className="flex justify-between gap-3">
-              <span className="text-slate-400">Lâmina na Barra:</span>
+              <span className="text-slate-400">Nível na Barra:</span>
               <span className="text-emerald-400 font-bold">{hoveredPoint.depth.toFixed(2)} m</span>
-            </div>
-            <div className="text-[10px] text-cyan-300/80 mt-1 border-t border-slate-800 pt-1">
-              {hoveredPoint.height >= requiredTideHeight ? '✅ Calado seguro' : '⚠️ Risco de encalhe'}
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom Hint */}
-      <div className="mt-2 text-xs text-slate-400 flex items-center justify-between">
+      {/* Bottom Hint & Legend */}
+      <div className="mt-2 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5 text-cyan-400" />
-          Passe o mouse ou toque sobre a curva para simular qualquer horário do dia.
+          Passe o mouse ou toque sobre a curva para inspecionar qualquer horário das 48 horas (hoje e amanhã).
         </span>
-        <span className="hidden sm:inline font-mono text-[11px] text-slate-500">
-          DHN Carta 703 • 27 Componentes Harmônicos
+        <span className="font-mono text-[11px] text-slate-500">
+          DHN Carta 703 • 48 Horas Contínuas
         </span>
       </div>
     </div>

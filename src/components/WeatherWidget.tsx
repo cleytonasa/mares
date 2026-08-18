@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wind, Waves, Gauge, Droplets, Sun, Sunset, Sunrise, RefreshCw, Compass, AlertTriangle, Eye } from 'lucide-react';
+import { Wind, Waves, Gauge, RefreshCw, Compass, Eye } from 'lucide-react';
 import { WeatherData, PortConfig } from '../types/maritime';
 
 interface WeatherWidgetProps {
@@ -157,29 +157,6 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
           <span className="text-xs text-slate-300 font-mono block mt-0.5">
             Umidade: <span className="font-bold text-white">{weather.humidity}%</span> • Chuva: {weather.precipitationProb}%
           </span>
-        </div>
-      </div>
-
-      {/* Sun & Twilight Maritime Schedule */}
-      <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-300">
-        <div className="flex items-center gap-2">
-          <Sunrise className="w-4 h-4 text-amber-400" />
-          <span>Alvorada Náutica: <strong className="text-white">{weather.nauticalDawn}</strong></span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Sun className="w-4 h-4 text-yellow-400" />
-          <span>Nascer do Sol: <strong className="text-white">{weather.sunrise}</strong></span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Sunset className="w-4 h-4 text-orange-400" />
-          <span>Pôr do Sol: <strong className="text-white">{weather.sunset}</strong></span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Sunset className="w-4 h-4 text-purple-400" />
-          <span>Crepúsculo Náutico: <strong className="text-white">{weather.nauticalDusk}</strong></span>
         </div>
       </div>
     </div>
