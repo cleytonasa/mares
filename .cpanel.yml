@@ -1,4 +1,7 @@
 ---
 deployment:
   tasks:
-    - /bin/echo "Deploy realizado com sucesso em /public_html/mares/"
+    - /bin/cp -rf production/* .
+    - /bin/cp -rf production/.htaccess .
+    - /bin/echo "Deploy da pasta production concluido com sucesso!"
+
