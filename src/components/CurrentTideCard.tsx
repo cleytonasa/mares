@@ -86,6 +86,10 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
   const displayWindSpeed = windUnit === 'knots' ? `${windKnots} nós` : `${windKmH} km/h`;
   const displayWindGust = windUnit === 'knots' ? `${windGustsKnots} kts` : `${windGustsKmH} km/h`;
 
+  // Wind gust alert threshold: 60 km/h (~32.4 knots)
+  const isGustAlert = windGustsKmH >= 60;
+  const isGustWarning = windGustsKmH >= 45 && !isGustAlert;
+
   return (
     <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 md:p-6 shadow-xl relative overflow-hidden text-slate-100">
       {/* Background ocean ambient glow */}
@@ -174,18 +178,33 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
               <span className="text-cyan-300 font-bold">{currentWaterDepth.toFixed(2)} m</span>
             </div>
 
-            {/* Integrated Wind Speed & Direction pill with click-to-toggle */}
+            {/* Integrated Wind Speed & Direction pill with click-to-toggle and Red Alert for Gust >= 60km/h */}
             <button
               onClick={() => handleToggleWindUnit(windUnit === 'knots' ? 'kmh' : 'knots')}
-              className="w-full text-xs font-mono bg-emerald-950/40 hover:bg-emerald-950/60 border border-emerald-600/40 hover:border-emerald-500 px-2.5 py-1.5 rounded-lg text-emerald-200 flex items-center justify-between gap-2 shadow-sm transition text-left cursor-pointer"
+              className={`w-full text-xs font-mono px-2.5 py-1.5 rounded-lg flex items-center justify-between gap-2 shadow-sm transition text-left cursor-pointer border ${
+                isGustAlert
+                  ? 'bg-rose-950/80 hover:bg-rose-900/80 border-rose-500 text-rose-100 animate-pulse ring-2 ring-rose-500/50'
+                  : isGustWarning
+                  ? 'bg-amber-950/60 hover:bg-amber-900/60 border-amber-500/70 text-amber-100'
+                  : 'bg-emerald-950/40 hover:bg-emerald-950/60 border-emerald-600/40 hover:border-emerald-500 text-emerald-200'
+              }`}
               title="Clique para alternar entre Nós (knots) e km/h"
             >
               <div className="flex items-center gap-1.5">
-                <Wind className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="text-slate-300">Vento:</span>
-                <span className="font-bold text-emerald-300">{displayWindSpeed} {windDirLabel}</span>
+                <Wind className={`w-4 h-4 shrink-0 ${isGustAlert ? 'text-rose-400 animate-spin' : isGustWarning ? 'text-amber-400' : 'text-emerald-400'}`} />
+                <span className={isGustAlert ? 'text-rose-200' : 'text-slate-300'}>Vento:</span>
+                <span className={`font-bold ${isGustAlert ? 'text-rose-200' : isGustWarning ? 'text-amber-300' : 'text-emerald-300'}`}>
+                  {displayWindSpeed} {windDirLabel}
+                </span>
               </div>
-              <span className="text-[10px] text-emerald-400/80 font-semibold bg-emerald-900/50 px-1.5 py-0.5 rounded border border-emerald-700/40">
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1 ${
+                isGustAlert
+                  ? 'bg-rose-600 text-white border-rose-400 uppercase tracking-wider'
+                  : isGustWarning
+                  ? 'bg-amber-900/80 text-amber-200 border-amber-600/60'
+                  : 'bg-emerald-900/50 text-emerald-300 border-emerald-700/40'
+              }`}>
+                {isGustAlert && <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block" />}
                 Rajada {displayWindGust}
               </span>
             </button>
@@ -250,11 +269,20 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
         {/* Right: Amplitude, Regime & Marine Conditions */}
         <div className="lg:col-span-3 space-y-2.5">
           {/* Marine Conditions with Unit Switcher */}
-          <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+          <div className={`p-3 rounded-xl border transition ${
+            isGustAlert
+              ? 'bg-rose-950/40 border-rose-600/70 ring-1 ring-rose-500/50'
+              : 'bg-slate-950/60 border-slate-800'
+          }`}>
             <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/80">
               <span className="text-[10px] uppercase text-slate-400 tracking-wider font-semibold flex items-center gap-1.5">
-                <Wind className="w-3.5 h-3.5 text-cyan-400" />
+                <Wind className={`w-3.5 h-3.5 ${isGustAlert ? 'text-rose-400' : 'text-cyan-400'}`} />
                 Vento & Mar
+                {isGustAlert && (
+                  <span className="text-[9px] px-1.5 py-0.2 bg-rose-600 text-white font-bold rounded animate-pulse">
+                    ALERTA RAJADA
+                  </span>
+                )}
               </span>
 
               {/* Unit Toggle Buttons */}

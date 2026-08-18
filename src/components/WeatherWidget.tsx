@@ -33,7 +33,9 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   const gustValue = useKnots ? `${weather.windGustKnots} kts` : `${Math.round(weather.windGustKnots * 1.852)} km/h`;
 
   // Determine wind condition severity
-  const isHighWind = weather.windSpeedKnots >= 20;
+  const gustKmH = Math.round(weather.windGustKnots * 1.852);
+  const isGustCritical = gustKmH >= 60;
+  const isHighWind = weather.windSpeedKnots >= 20 || isGustCritical;
   const isHighWave = weather.waveHeightMeters >= 1.6;
 
   return (
@@ -79,16 +81,27 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
       {/* Main Meteorological Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Wind Card with Compass Rose */}
-        <div className={`p-4 rounded-xl border flex items-center justify-between ${isHighWind ? 'bg-amber-950/30 border-amber-600/50' : 'bg-slate-950/60 border-slate-800'}`}>
+        <div className={`p-4 rounded-xl border flex items-center justify-between transition ${
+          isGustCritical
+            ? 'bg-rose-950/50 border-rose-500/80 ring-1 ring-rose-500/50 animate-pulse'
+            : isHighWind
+            ? 'bg-amber-950/30 border-amber-600/50'
+            : 'bg-slate-950/60 border-slate-800'
+        }`}>
           <div>
             <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider flex items-center gap-1.5">
-              <Wind className="w-3.5 h-3.5 text-cyan-400" />
+              <Wind className={`w-3.5 h-3.5 ${isGustCritical ? 'text-rose-400' : 'text-cyan-400'}`} />
               Vento & Direção
+              {isGustCritical && (
+                <span className="text-[9px] px-1.5 py-0.2 bg-rose-600 text-white font-bold rounded">
+                  ALERTA &gt;60km/h
+                </span>
+              )}
             </span>
             <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-2xl font-black font-mono text-white">{windValue}</span>
+              <span className={`text-2xl font-black font-mono ${isGustCritical ? 'text-rose-200' : 'text-white'}`}>{windValue}</span>
             </div>
-            <span className="text-xs text-cyan-300 font-mono font-bold block mt-0.5">
+            <span className={`text-xs font-mono font-bold block mt-0.5 ${isGustCritical ? 'text-rose-300' : 'text-cyan-300'}`}>
               {weather.windDirectionLabel} ({weather.windDirection}°) • Rajadas {gustValue}
             </span>
           </div>

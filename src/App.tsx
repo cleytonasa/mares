@@ -75,7 +75,10 @@ export default function App() {
 
   // Active Environmental Alerts
   const activeAlerts: string[] = [];
-  if (weather && weather.windSpeedKnots >= thresholds.maxWindKnots) {
+  const gustKmH = weather ? Math.round(weather.windGustKnots * 1.852) : 0;
+  if (gustKmH >= 60) {
+    activeAlerts.push(`ALERTA CRÍTICO: Rajada de vento severa de ${gustKmH} km/h (${weather?.windGustKnots} nós) acima do limite de segurança (60 km/h)`);
+  } else if (weather && weather.windSpeedKnots >= thresholds.maxWindKnots) {
     activeAlerts.push(`Vento forte na região (${weather.windSpeedKnots} nós > limite de ${thresholds.maxWindKnots} nós)`);
   }
   if (weather && weather.waveHeightMeters >= thresholds.maxWaveHeightMeters) {
