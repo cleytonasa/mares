@@ -1,6 +1,6 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home1/cleyt730/public_html/mares/
-    - /bin/cp -R dist/* $DEPLOYPATH
-    - /bin/cp dist/.htaccess $DEPLOYPATH
+    - export DEPLOYPATH=/home1/cleyt730/public_html/mares
+    - /bin/cp -rf production/* $DEPLOYPATH/
+    - /bin/cp -f production/.htaccess $DEPLOYPATH/
