@@ -1,12 +1,13 @@
-import React from 'react';
-import { ArrowUpRight, ArrowDownRight, Minus, Waves, Clock, Compass, ShieldAlert, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowUpRight, ArrowDownRight, Minus, Waves, Clock, Compass, Wind, Sparkles } from 'lucide-react';
 import { CurrentTideState } from '../utils/tideCalculations';
-import { PortConfig } from '../types/maritime';
+import { PortConfig, WeatherData } from '../types/maritime';
 
 interface CurrentTideCardProps {
   tideState: CurrentTideState;
   port: PortConfig;
   currentTime: Date;
+  weather?: WeatherData | null;
   onSimulateTime?: (date: Date) => void;
   isSimulated?: boolean;
   onResetSimulation?: () => void;
@@ -16,6 +17,7 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
   tideState,
   port,
   currentTime,
+  weather,
   isSimulated,
   onResetSimulation,
 }) => {
@@ -32,6 +34,22 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
     minutesToNextEvent,
     currentWaterDepth,
   } = tideState;
+
+  // Wind speed unit toggle ('knots' or 'kmh')
+  const [windUnit, setWindUnit] = useState<'knots' | 'kmh'>(() => {
+    try {
+      return (localStorage.getItem('preferred_wind_unit') as 'knots' | 'kmh') || 'knots';
+    } catch {
+      return 'knots';
+    }
+  });
+
+  const handleToggleWindUnit = (unit: 'knots' | 'kmh') => {
+    setWindUnit(unit);
+    try {
+      localStorage.setItem('preferred_wind_unit', unit);
+    } catch {}
+  };
 
   const hoursToNext = Math.floor(minutesToNextEvent / 60);
   const minsToNext = minutesToNextEvent % 60;
@@ -54,6 +72,19 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
     if (trend === 'VAZANDO') return 'text-amber-400 bg-amber-950/60 border-amber-500/30';
     return 'text-cyan-300 bg-cyan-950/60 border-cyan-500/30';
   };
+
+  // Fallback / real weather values
+  const windKnots = weather ? weather.windSpeedKnots : 12;
+  const windKmH = Math.round(windKnots * 1.852);
+  const windDirLabel = weather ? weather.windDirectionLabel : 'ESE';
+  const windDirDeg = weather ? weather.windDirection : 110;
+  const windGustsKnots = weather ? weather.windGustKnots : 16;
+  const windGustsKmH = Math.round(windGustsKnots * 1.852);
+  const waveHeight = weather ? weather.waveHeightMeters : 0.8;
+
+  // Formatted speed according to current unit
+  const displayWindSpeed = windUnit === 'knots' ? `${windKnots} nós` : `${windKmH} km/h`;
+  const displayWindGust = windUnit === 'knots' ? `${windGustsKnots} kts` : `${windGustsKmH} km/h`;
 
   return (
     <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 md:p-6 shadow-xl relative overflow-hidden text-slate-100">
@@ -93,10 +124,10 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
 
       {/* Main Stats Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-5 items-center relative z-10">
-        {/* Left: Height Number & Gauge */}
-        <div className="lg:col-span-5 flex items-center gap-6">
+        {/* Left: Height Number, Depth & Instantaneous Wind */}
+        <div className="lg:col-span-5 flex items-center gap-5">
           {/* Vertical Level Tube Visualizer */}
-          <div className="relative w-12 h-44 bg-slate-950 rounded-2xl border-2 border-slate-800 overflow-hidden flex flex-col justify-end p-1 shadow-inner">
+          <div className="relative w-12 h-48 bg-slate-950 rounded-2xl border-2 border-slate-800 overflow-hidden flex flex-col justify-end p-1 shadow-inner shrink-0">
             {/* Scale markers */}
             <div className="absolute inset-0 flex flex-col justify-between py-2 px-1 text-[8px] font-mono text-slate-600 pointer-events-none select-none">
               <span className="text-right">4.0m</span>
@@ -123,26 +154,44 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
             </div>
           </div>
 
-          {/* Large Height Display */}
-          <div className="flex-1">
-            <span className="text-xs uppercase font-medium text-slate-400 block tracking-wider">
-              Altura Instantânea
-            </span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-4xl md:text-5xl font-black font-mono tracking-tight text-white">
-                {currentHeight.toFixed(2)}
+          {/* Large Height Display + Integrated Wind */}
+          <div className="flex-1 space-y-2">
+            <div>
+              <span className="text-xs uppercase font-medium text-slate-400 block tracking-wider">
+                Altura Instantânea
               </span>
-              <span className="text-lg font-bold text-cyan-400 font-mono">metros</span>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <span className="text-4xl md:text-5xl font-black font-mono tracking-tight text-white">
+                  {currentHeight.toFixed(2)}
+                </span>
+                <span className="text-lg font-bold text-cyan-400 font-mono">metros</span>
+              </div>
             </div>
 
             {/* Depth over shallowest bar bank */}
-            <div className="mt-2 text-xs font-mono text-slate-300 flex items-center gap-1.5 bg-slate-950/60 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
-              <span className="text-slate-400">Lâmina d'água na Barra:</span>
+            <div className="text-xs font-mono text-slate-300 flex items-center justify-between gap-1.5 bg-slate-950/60 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
+              <span className="text-slate-400">Lâmina na Barra:</span>
               <span className="text-cyan-300 font-bold">{currentWaterDepth.toFixed(2)} m</span>
             </div>
 
+            {/* Integrated Wind Speed & Direction pill with click-to-toggle */}
+            <button
+              onClick={() => handleToggleWindUnit(windUnit === 'knots' ? 'kmh' : 'knots')}
+              className="w-full text-xs font-mono bg-emerald-950/40 hover:bg-emerald-950/60 border border-emerald-600/40 hover:border-emerald-500 px-2.5 py-1.5 rounded-lg text-emerald-200 flex items-center justify-between gap-2 shadow-sm transition text-left cursor-pointer"
+              title="Clique para alternar entre Nós (knots) e km/h"
+            >
+              <div className="flex items-center gap-1.5">
+                <Wind className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="text-slate-300">Vento:</span>
+                <span className="font-bold text-emerald-300">{displayWindSpeed} {windDirLabel}</span>
+              </div>
+              <span className="text-[10px] text-emerald-400/80 font-semibold bg-emerald-900/50 px-1.5 py-0.5 rounded border border-emerald-700/40">
+                Rajada {displayWindGust}
+              </span>
+            </button>
+
             {/* Trend Badge */}
-            <div className={`mt-3 px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 ${getTrendColor()}`}>
+            <div className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 ${getTrendColor()}`}>
               {getTrendIcon()}
               <div>
                 <span className="block font-bold">{trendDescription}</span>
@@ -198,46 +247,79 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
           </div>
         </div>
 
-        {/* Right: Amplitude & Regime */}
+        {/* Right: Amplitude, Regime & Marine Conditions */}
         <div className="lg:col-span-3 space-y-2.5">
+          {/* Marine Conditions with Unit Switcher */}
+          <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+            <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/80">
+              <span className="text-[10px] uppercase text-slate-400 tracking-wider font-semibold flex items-center gap-1.5">
+                <Wind className="w-3.5 h-3.5 text-cyan-400" />
+                Vento & Mar
+              </span>
+
+              {/* Unit Toggle Buttons */}
+              <div className="flex items-center p-0.5 bg-slate-900 rounded-lg border border-slate-700/80 text-[10px] font-mono">
+                <button
+                  onClick={() => handleToggleWindUnit('knots')}
+                  className={`px-1.5 py-0.5 rounded transition ${
+                    windUnit === 'knots'
+                      ? 'bg-emerald-600 text-white font-bold shadow'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="Exibir em Nós (Knots)"
+                >
+                  nós
+                </button>
+                <button
+                  onClick={() => handleToggleWindUnit('kmh')}
+                  className={`px-1.5 py-0.5 rounded transition ${
+                    windUnit === 'kmh'
+                      ? 'bg-emerald-600 text-white font-bold shadow'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                  title="Exibir em km/h"
+                >
+                  km/h
+                </button>
+              </div>
+            </div>
+
+            <div className="text-[11px] font-mono text-slate-300 space-y-1 mt-1.5">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Velocidade:</span>
+                <span className="font-bold text-emerald-300">
+                  {windUnit === 'knots' ? `${windKnots} nós (${windKmH} km/h)` : `${windKmH} km/h (${windKnots} kts)`}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Direção:</span>
+                <span className="font-bold text-white">{windDirLabel} ({windDirDeg}°)</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400">Ondas (Vaga):</span>
+                <span className="font-bold text-cyan-300">{waveHeight.toFixed(1)} m</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Regime */}
           <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
             <span className="text-[10px] uppercase text-slate-400 block tracking-wider font-semibold">
               Regime de Maré
             </span>
             <div className="flex items-center justify-between mt-1">
-              <span className="text-sm font-bold text-white flex items-center gap-1.5">
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 MARÉ DE {coefficientType}
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Variação de amplitude: <span className="text-slate-200 font-mono font-bold">{amplitude.toFixed(2)} m</span>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Amplitude: <span className="text-slate-200 font-mono font-bold">{amplitude.toFixed(2)} m</span>
             </p>
-          </div>
-
-          <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-            <span className="text-[10px] uppercase text-slate-400 block tracking-wider font-semibold">
-              Referência DHN
-            </span>
-            <div className="text-[11px] font-mono text-slate-300 space-y-0.5 mt-1">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Nível Médio (NM):</span>
-                <span className="font-bold">{port.meanLevel} m</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Zero Hidrográfico:</span>
-                <span className="font-bold">Carta {port.chartNumber}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Offset Local:</span>
-                <span className="font-bold text-cyan-400">
-                  {port.timeOffsetMinutes === 0 ? 'Referência Padrão' : `${port.timeOffsetMinutes} min`}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
     </div>
   );
 };
+

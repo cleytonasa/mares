@@ -15,7 +15,6 @@ interface InteractiveNauticalMapProps {
   userLocation: CustomUserLocation;
   onSelectPort: (portId: 'areia_branca' | 'macau') => void;
   onUpdateUserLocation: (newLoc: CustomUserLocation) => void;
-  onOpenManualLocationModal: () => void;
 }
 
 export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
@@ -24,7 +23,6 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
   userLocation,
   onSelectPort,
   onUpdateUserLocation,
-  onOpenManualLocationModal,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -304,15 +302,6 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Manual Location Modal Button */}
-          <button
-            onClick={onOpenManualLocationModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition"
-          >
-            <Crosshair className="w-3.5 h-3.5" />
-            Setar Posição Manual / GPS
-          </button>
-
           {/* Map Layer Switcher */}
           <div className="flex items-center p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs">
             <button

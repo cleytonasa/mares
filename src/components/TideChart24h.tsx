@@ -119,9 +119,9 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
     onChangeDate(new Date());
   };
 
-  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = ((e.clientX - rect.left) / rect.width) * svgWidth;
+  const updateHoverFromClientX = (clientX: number, targetSvg: SVGSVGElement) => {
+    const rect = targetSvg.getBoundingClientRect();
+    const clickX = Math.max(0, Math.min(svgWidth, ((clientX - rect.left) / rect.width) * svgWidth));
     const fraction = Math.max(0, Math.min(1, (clickX - padding.left) / chartWidth));
 
     const totalMinutes = fraction * 2880; // 48 hours = 2880 minutes
@@ -146,6 +146,16 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
     });
   };
 
+  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    updateHoverFromClientX(e.clientX, e.currentTarget);
+  };
+
+  const handleSvgTouch = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (e.touches && e.touches[0]) {
+      updateHoverFromClientX(e.touches[0].clientX, e.currentTarget);
+    }
+  };
+
   const handleSvgClick = () => {
     if (hoveredPoint && onSelectTime) {
       onSelectTime(hoveredPoint.rawDate);
@@ -153,22 +163,14 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
   };
 
   return (
-    <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 md:p-6 shadow-xl text-slate-100 space-y-4">
+    <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 sm:p-5 md:p-6 shadow-xl text-slate-100 space-y-4">
       {/* Top Bar with Date Navigation & 48h Indicator */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
         <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold tracking-wider text-cyan-400 uppercase flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Curva Harmônica de Variação (48 Horas)
-            </h3>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/60 uppercase">
-              Dia Atual + Próximo Dia
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Cronologia contínua com interpolação senoidal oficial para {port.name}
-          </p>
+          <h3 className="text-sm font-bold tracking-wider text-cyan-400 uppercase flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Curva Harmônica de Variação (48 Horas)
+          </h3>
         </div>
 
         {/* Date Selector Controls */}
@@ -181,7 +183,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <div className="px-3 py-1 bg-slate-950 rounded-lg border border-slate-800 text-xs font-mono font-bold text-slate-200">
+          <div className="px-2.5 sm:px-3 py-1 bg-slate-950 rounded-lg border border-slate-800 text-xs font-mono font-bold text-slate-200">
             {d1.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} ➔ {d2.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
           </div>
 
@@ -272,13 +274,15 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
         </div>
       </div>
 
-      {/* SVG Chart Container */}
-      <div className="relative overflow-x-auto select-none pt-2">
+      {/* SVG Chart Container - Fully visible and scalable on mobile screens */}
+      <div className="relative w-full overflow-hidden select-none pt-2 bg-slate-950/40 rounded-xl border border-slate-800/60 p-1 sm:p-2">
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          className="w-full h-auto cursor-crosshair min-w-[700px]"
+          className="w-full h-auto block cursor-crosshair touch-none"
           onMouseMove={handleSvgMouseMove}
           onMouseLeave={() => setHoveredPoint(null)}
+          onTouchStart={handleSvgTouch}
+          onTouchMove={handleSvgTouch}
           onClick={handleSvgClick}
         >
           <defs>
@@ -313,7 +317,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             x={scaleX(0.25)}
             y={padding.top - 12}
             fill="#38bdf8"
-            fontSize="11"
+            fontSize="12"
             fontFamily="monospace"
             fontWeight="bold"
             textAnchor="middle"
@@ -324,7 +328,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             x={scaleX(0.75)}
             y={padding.top - 12}
             fill="#94a3b8"
-            fontSize="11"
+            fontSize="12"
             fontFamily="monospace"
             fontWeight="bold"
             textAnchor="middle"
@@ -346,7 +350,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             x={midnightX}
             y={padding.top - 8}
             fill="#0ea5e9"
-            fontSize="9"
+            fontSize="10"
             fontFamily="monospace"
             fontWeight="bold"
             textAnchor="middle"
@@ -372,7 +376,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                   x={padding.left - 8}
                   y={y + 4}
                   fill="#94a3b8"
-                  fontSize="10"
+                  fontSize="11"
                   fontFamily="monospace"
                   textAnchor="end"
                 >
@@ -397,7 +401,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             x={svgWidth - padding.right}
             y={scaleY(port.meanLevel) - 4}
             fill="#38bdf8"
-            fontSize="9"
+            fontSize="10"
             fontFamily="monospace"
             textAnchor="end"
           >
@@ -432,7 +436,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                   x={x}
                   y={svgHeight - padding.bottom + 18}
                   fill={item.hour === 24 ? '#38bdf8' : '#94a3b8'}
-                  fontSize="10"
+                  fontSize="11"
                   fontFamily="monospace"
                   fontWeight={item.hour === 24 ? 'bold' : 'normal'}
                   textAnchor="middle"
@@ -478,7 +482,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                   x={x}
                   y={evt.type === 'high' ? y - 8 : y + 14}
                   fill={evt.type === 'high' ? '#7dd3fc' : '#cbd5e1'}
-                  fontSize="9"
+                  fontSize="10"
                   fontFamily="monospace"
                   fontWeight="bold"
                   textAnchor="middle"
@@ -520,7 +524,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                   x={x}
                   y={evt.type === 'high' ? y - 8 : y + 14}
                   fill={evt.type === 'high' ? '#7dd3fc' : '#cbd5e1'}
-                  fontSize="9"
+                  fontSize="10"
                   fontFamily="monospace"
                   fontWeight="bold"
                   textAnchor="middle"
@@ -555,7 +559,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                 x={currentCursorX}
                 y={padding.top - 8}
                 fill="#f87171"
-                fontSize="10"
+                fontSize="11"
                 fontFamily="monospace"
                 fontWeight="bold"
                 textAnchor="middle"
@@ -591,10 +595,10 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
         {/* Hover Tooltip Floating Card */}
         {hoveredPoint && (
           <div
-            className="absolute z-20 pointer-events-none bg-slate-950/95 border border-cyan-500/50 p-2.5 rounded-xl shadow-2xl text-xs font-mono text-slate-200 backdrop-blur"
+            className="absolute z-20 pointer-events-none bg-slate-950/95 border border-cyan-500/50 p-2.5 rounded-xl shadow-2xl text-xs font-mono text-slate-200 backdrop-blur max-w-[260px] sm:max-w-xs"
             style={{
-              left: `${Math.min(80, Math.max(10, (hoveredPoint.x / svgWidth) * 100))}%`,
-              top: '20px',
+              left: `${Math.min(75, Math.max(5, (hoveredPoint.x / svgWidth) * 100))}%`,
+              top: '15px',
             }}
           >
             <div className="text-cyan-400 font-bold flex items-center justify-between gap-3">

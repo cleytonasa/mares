@@ -10,7 +10,6 @@ interface NavbarProps {
   onChangeTab: (tab: 'dashboard' | 'table' | 'map' | 'report') => void;
   currentTime: Date;
   userLocation: CustomUserLocation;
-  onOpenManualLocationModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -20,7 +19,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onChangeTab,
   currentTime,
   userLocation,
-  onOpenManualLocationModal,
 }) => {
   return (
     <header className="bg-slate-900 text-slate-100 border-b border-slate-800 sticky top-0 z-40 shadow-lg">
@@ -35,7 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5 font-sans">
-                  SISTEMA DE CONTROLE DE MARÉS
+                  Sala de Controle - Marés
                 </h1>
                 <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/50">
                   DHN 2026
@@ -50,16 +48,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 ml-auto">
-            {/* User Custom Location Pill */}
-            <button
-              onClick={onOpenManualLocationModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 hover:border-cyan-500 text-xs font-mono transition shadow-sm"
-              title="Clique para visualizar ou alterar coordenadas manuais"
-            >
+            {/* Fixed Location Pill */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/80 text-slate-200 border border-slate-700 text-xs font-mono shadow-sm">
               <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
               <span className="hidden lg:inline text-slate-400">Posição:</span>
               <span className="font-bold text-cyan-300">{userLocation.dmsLat} {userLocation.dmsLng}</span>
-            </button>
+            </div>
 
             {/* Live Clock */}
             <div className="hidden md:flex flex-col text-right font-mono bg-slate-800/60 px-3 py-1 rounded-lg border border-slate-700/60">

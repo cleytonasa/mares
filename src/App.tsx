@@ -2,12 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { CurrentTideCard } from './components/CurrentTideCard';
 import { TideChart24h } from './components/TideChart24h';
-import { WeatherWidget } from './components/WeatherWidget';
 import { InteractiveNauticalMap } from './components/InteractiveNauticalMap';
 import { TideTableMonthly } from './components/TideTableMonthly';
 import { InformativoGenerator } from './components/InformativoGenerator';
 import { AlertSettingsModal } from './components/AlertSettingsModal';
-import { ManualLocationModal } from './components/ManualLocationModal';
 import { PORTS_DATA } from './data/portsData';
 import { PortConfig, WeatherData, AlertThresholds, CustomUserLocation } from './types/maritime';
 import { INITIAL_USER_LOCATION } from './data/vesselTrafficData';
@@ -31,9 +29,8 @@ export default function App() {
   const [simulatedTime, setSimulatedTime] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  // Custom User Location state (manual or GPS)
+  // Custom User Location state (fixed reference standard)
   const [userLocation, setUserLocation] = useState<CustomUserLocation>(INITIAL_USER_LOCATION);
-  const [isLocationModalOpen, setIsLocationModalOpen] = useState<boolean>(false);
 
   // Weather state
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -111,7 +108,6 @@ export default function App() {
         onChangeTab={setActiveTab}
         currentTime={currentTime}
         userLocation={userLocation}
-        onOpenManualLocationModal={() => setIsLocationModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -132,11 +128,12 @@ export default function App() {
         {/* Tab 1: Dashboard */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            {/* 1. Real-time Tide Gauge Card (Nível da Maré em Tempo Real) */}
+            {/* 1. Real-time Tide Gauge Card with Integrated Wind Speed */}
             <CurrentTideCard
               tideState={currentTideState}
               port={activePort}
               currentTime={effectiveTime}
+              weather={weather}
               isSimulated={Boolean(simulatedTime)}
               onResetSimulation={handleResetSimulation}
             />
@@ -149,42 +146,6 @@ export default function App() {
               currentTime={effectiveTime}
               onSelectTime={handleSelectTimeFromChart}
             />
-
-            {/* 3. Weather Marine Widget (Meteorologia Marítima Local) */}
-            <WeatherWidget
-              weather={weather}
-              loading={weatherLoading}
-              port={activePort}
-              onRefresh={loadWeather}
-            />
-
-            {/* Quick Position Bar */}
-            <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-cyan-600/20 text-cyan-400 border border-cyan-500/30">
-                  <Crosshair className="w-5 h-5" />
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase block font-sans">
-                    Sua Referência Geográfica:
-                  </span>
-                  <span className="font-bold text-white text-sm">
-                    {userLocation.dmsLat} {userLocation.dmsLng}
-                  </span>
-                  <span className="text-[11px] text-cyan-400 ml-2">({userLocation.name})</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsLocationModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition shadow-md shadow-cyan-600/20 flex items-center gap-1.5"
-                >
-                  <MapPin className="w-3.5 h-3.5" />
-                  Setar Coordenadas / GPS
-                </button>
-              </div>
-            </div>
 
             {/* Quick Actions / Highlights Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -263,7 +224,6 @@ export default function App() {
             userLocation={userLocation}
             onSelectPort={setSelectedPortId}
             onUpdateUserLocation={setUserLocation}
-            onOpenManualLocationModal={() => setIsLocationModalOpen(true)}
           />
         )}
 
@@ -290,17 +250,6 @@ export default function App() {
           />
         )}
       </main>
-
-      {/* Manual Location Modal */}
-      <ManualLocationModal
-        isOpen={isLocationModalOpen}
-        onClose={() => setIsLocationModalOpen(false)}
-        currentLocation={userLocation}
-        onUpdateLocation={setUserLocation}
-        onEnableMapClickMode={() => {
-          setActiveTab('map');
-        }}
-      />
 
       {/* Alert Thresholds Modal */}
       <AlertSettingsModal
