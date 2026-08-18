@@ -1,31 +1,30 @@
+# Definir o arquivo inicial padrão para o Apache
+DirectoryIndex index.html index.htm index.php
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  RewriteBase /mares/
 
-  # Se o arquivo ou pasta requisitado existir, sirva diretamente (assets, css, js, imagens)
+  # Não reescrever se o arquivo ou diretório existir fisicamente
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Caso contrário, redireciona para o index.html da própria pasta
-  RewriteRule ^ index.html [L]
+  # Redirecionar todas as outras rotas para o index.html da pasta mares
+  RewriteRule . index.html [L]
 </IfModule>
 
-# Compressão GZIP / Brotli para carregamento rápido no HostGator
+# Compressão GZIP para carregamento super rápido
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml image/svg+xml
 </IfModule>
 
-# Configuração de Cache para arquivos estáticos (JS, CSS, Imagens)
+# Headers de cache
 <IfModule mod_expires.c>
   ExpiresActive On
-  ExpiresByType image/jpg "access plus 1 year"
-  ExpiresByType image/jpeg "access plus 1 year"
-  ExpiresByType image/gif "access plus 1 year"
-  ExpiresByType image/png "access plus 1 year"
-  ExpiresByType image/svg+xml "access plus 1 year"
   ExpiresByType text/css "access plus 1 month"
   ExpiresByType application/javascript "access plus 1 month"
   ExpiresByType text/javascript "access plus 1 month"
-  ExpiresByType application/font-woff "access plus 1 year"
-  ExpiresByType application/font-woff2 "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
 </IfModule>
