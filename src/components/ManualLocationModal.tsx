@@ -41,12 +41,12 @@ export const ManualLocationModal: React.FC<ManualLocationModalProps> = ({
   // DMS inputs
   const [latDeg, setLatDeg] = useState<string>('4');
   const [latMin, setLatMin] = useState<string>('49');
-  const [latSec, setLatSec] = useState<string>('20.5');
+  const [latSec, setLatSec] = useState<string>('06.3');
   const [latDir, setLatDir] = useState<'S' | 'N'>('S');
 
   const [lngDeg, setLngDeg] = useState<string>('37');
   const [lngMin, setLngMin] = useState<string>('02');
-  const [lngSec, setLngSec] = useState<string>('37.7');
+  const [lngSec, setLngSec] = useState<string>('39.8');
   const [lngDir, setLngDir] = useState<'W' | 'E'>('W');
 
   // Decimal inputs

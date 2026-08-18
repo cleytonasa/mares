@@ -3,6 +3,7 @@ import { FileText, Copy, Check, Printer, Share2, Anchor, Waves, Wind, ShieldAler
 import { PortConfig, WeatherData } from '../types/maritime';
 import { getTidesForDay } from '../data/tideData2026';
 import { calculateCurrentTide, get24hTideCurve } from '../utils/tideCalculations';
+import { IntersalLogo } from './IntersalLogo';
 
 interface InformativoGeneratorProps {
   port: PortConfig;
@@ -134,14 +135,14 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
         className="bg-slate-950 p-6 md:p-8 rounded-2xl border border-slate-800 shadow-2xl text-slate-200 space-y-6"
       >
         {/* Document Header */}
-        <div className="border-b-2 border-cyan-500/40 pb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="border-b-2 border-emerald-500/40 pb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-cyan-600/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
-              <Anchor className="w-7 h-7" />
+            <div className="w-14 h-14 rounded-full bg-white p-0.5 border-2 border-emerald-600/40 flex items-center justify-center shrink-0 shadow-md">
+              <IntersalLogo className="w-full h-full" />
             </div>
             <div>
-              <span className="text-[11px] font-mono tracking-widest uppercase text-cyan-400 font-bold block">
-                DIRETORIA DE HIDROGRAFIA E NAVEGAÇÃO • COSTA BRANCA - RN
+              <span className="text-[11px] font-mono tracking-widest uppercase text-emerald-400 font-bold block">
+                INTERSAL • SALA DE OPERAÇÃO • COSTA BRANCA - RN
               </span>
               <h1 className="text-xl md:text-2xl font-black text-white tracking-tight uppercase">
                 INFORMATIVO DIÁRIO DE MARÉS & BARRAS

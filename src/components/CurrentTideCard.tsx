@@ -63,21 +63,16 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800 relative z-10">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold tracking-wider text-cyan-400 uppercase flex items-center gap-1.5">
-              <Waves className="w-4 h-4" />
-              Nível da Maré em Tempo Real
-            </h2>
-            {isSimulated && (
-              <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                MODO SIMULAÇÃO
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-slate-400 font-mono mt-0.5">
-            {port.fullName} • {port.dhnStation}
-          </p>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold tracking-wider text-cyan-400 uppercase flex items-center gap-1.5 font-mono">
+            <Waves className="w-4 h-4" />
+            Nível da Maré em Tempo Real
+          </h2>
+          {isSimulated && (
+            <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              MODO SIMULAÇÃO
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">

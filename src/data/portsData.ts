@@ -9,10 +9,10 @@ export const PORTS_DATA: Record<'areia_branca' | 'macau', PortConfig> = {
     chartNumber: 'Carta DHN 703 / 701',
     dhnStation: 'DG6-63 (DHN 27 Componentes)',
     coordinates: {
-      lat: -4.82236, // 4°49'20.5"S
-      lng: -37.04381, // 37°02'37.7"W (Exact user coordinates)
-      dmsLat: `4°49'20.5"S`,
-      dmsLng: `37°02'37.7"W`,
+      lat: -4.818417, // 4°49'06.3"S
+      lng: -37.044389, // 37°02'39.8"W (Exact requested coordinates)
+      dmsLat: `4°49'06.3"S`,
+      dmsLng: `37°02'39.8"W`,
     },
     meanLevel: 1.88, // Nível Médio 1.88 m
     chartDatum: 0.0,

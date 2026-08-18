@@ -1,11 +1,11 @@
 import { VesselAIS, CustomUserLocation } from '../types/maritime';
 
 export const INITIAL_USER_LOCATION: CustomUserLocation = {
-  lat: -4.82236,
-  lng: -37.04381,
-  name: 'Canal de Acesso TERMISA (Coordenada Oficial)',
-  dmsLat: `4°49'20.5"S`,
-  dmsLng: `37°02'37.7"W`,
+  lat: -4.818417,
+  lng: -37.044389,
+  name: 'Canal de Acesso TERMISA (Coordenada Padrão)',
+  dmsLat: `4°49'06.3"S`,
+  dmsLng: `37°02'39.8"W`,
   isManual: false,
   estimatedBaseZHDepth: 4.8,
 };
@@ -23,14 +23,14 @@ export const REGIONAL_POINTS_OF_INTEREST: {
 }[] = [
   {
     id: 'user_base',
-    name: `Coordenada Base (4°49'20.5"S 37°02'37.7"W)`,
+    name: `Coordenada Oficial (4°49'06.3"S 37°02'39.8"W)`,
     category: 'Canal',
-    lat: -4.82236,
-    lng: -37.04381,
-    dmsLat: `4°49'20.5"S`,
-    dmsLng: `37°02'37.7"W`,
+    lat: -4.818417,
+    lng: -37.044389,
+    dmsLat: `4°49'06.3"S`,
+    dmsLng: `37°02'39.8"W`,
     estimatedBaseZHDepth: 4.8,
-    description: 'Ponto de controle e navegação no alinhamento do canal de acesso ao TERMISA.',
+    description: 'Ponto de controle e navegação oficial no alinhamento do canal de acesso ao TERMISA.',
   },
   {
     id: 'termisa_island',

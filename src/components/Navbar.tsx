@@ -1,6 +1,7 @@
 import React from 'react';
-import { Anchor, Compass, Bell, FileText, Map, Table, Waves, MapPin } from 'lucide-react';
+import { Anchor, Compass, FileText, Map, Table, Waves, MapPin } from 'lucide-react';
 import { PortConfig, CustomUserLocation } from '../types/maritime';
+import { IntersalLogo } from './IntersalLogo';
 
 interface NavbarProps {
   activePort: PortConfig;
@@ -8,8 +9,6 @@ interface NavbarProps {
   activeTab: 'dashboard' | 'table' | 'map' | 'report';
   onChangeTab: (tab: 'dashboard' | 'table' | 'map' | 'report') => void;
   currentTime: Date;
-  onOpenAlerts: () => void;
-  unreadAlertCount: number;
   userLocation: CustomUserLocation;
   onOpenManualLocationModal: () => void;
 }
@@ -20,8 +19,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   onChangeTab,
   currentTime,
-  onOpenAlerts,
-  unreadAlertCount,
   userLocation,
   onOpenManualLocationModal,
 }) => {
@@ -30,23 +27,24 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
         {/* Top Info Bar */}
         <div className="py-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-md shadow-cyan-500/20 text-white">
-              <Anchor className="w-5 h-5" />
+          <div className="flex items-center gap-3">
+            {/* Intersal Sala de Operação Official Logo */}
+            <div className="w-11 h-11 rounded-full bg-white p-0.5 shadow-md flex items-center justify-center shrink-0 border border-emerald-500/40">
+              <IntersalLogo className="w-full h-full" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+                <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5 font-sans">
                   SISTEMA DE CONTROLE DE MARÉS
                 </h1>
-                <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded bg-cyan-950/80 text-cyan-300 border border-cyan-700/50">
+                <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/50">
                   DHN 2026
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-mono flex items-center gap-2">
                 <span className="font-medium text-slate-300">Areia Branca & Macau - RN</span>
                 <span className="text-slate-600">•</span>
-                <span className="text-cyan-400 font-semibold">{activePort.coordinates.dmsLat} {activePort.coordinates.dmsLng}</span>
+                <span className="text-cyan-400 font-semibold">{userLocation.dmsLat} {userLocation.dmsLng}</span>
               </p>
             </div>
           </div>
@@ -55,11 +53,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* User Custom Location Pill */}
             <button
               onClick={onOpenManualLocationModal}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 hover:border-cyan-500 text-xs font-mono transition shadow-sm"
-              title="Clique para alterar suas coordenadas náuticas manuais ou usar GPS"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700 hover:border-cyan-500 text-xs font-mono transition shadow-sm"
+              title="Clique para visualizar ou alterar coordenadas manuais"
             >
               <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-              <span className="hidden lg:inline text-slate-400">Minha Posição:</span>
+              <span className="hidden lg:inline text-slate-400">Posição:</span>
               <span className="font-bold text-cyan-300">{userLocation.dmsLat} {userLocation.dmsLng}</span>
             </button>
 
@@ -72,21 +70,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {currentTime.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
               </span>
             </div>
-
-            {/* Alert Settings Button */}
-            <button
-              id="btn-alert-settings"
-              onClick={onOpenAlerts}
-              className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700"
-              title="Configurações de Alertas de Maré"
-            >
-              <Bell className="w-4 h-4" />
-              {unreadAlertCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
-                  {unreadAlertCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
 

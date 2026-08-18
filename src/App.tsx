@@ -110,8 +110,6 @@ export default function App() {
         activeTab={activeTab}
         onChangeTab={setActiveTab}
         currentTime={currentTime}
-        onOpenAlerts={() => setIsAlertModalOpen(true)}
-        unreadAlertCount={activeAlerts.length}
         userLocation={userLocation}
         onOpenManualLocationModal={() => setIsLocationModalOpen(true)}
       />
@@ -120,22 +118,14 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-3 sm:px-6 pt-5 space-y-6">
         {/* Active Alert Banner */}
         {activeAlerts.length > 0 && (
-          <div className="p-3.5 bg-amber-950/50 border border-amber-500/50 rounded-2xl flex items-center justify-between gap-3 text-xs text-amber-200 shadow-lg">
-            <div className="flex items-center gap-2.5">
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-              <div>
-                <span className="font-bold uppercase tracking-wider block text-amber-300">
-                  Condições Meteorológicas & Maré
-                </span>
-                <span>{activeAlerts.join(' • ')}</span>
-              </div>
+          <div className="p-3.5 bg-amber-950/50 border border-amber-500/50 rounded-2xl flex items-center gap-3 text-xs text-amber-200 shadow-lg">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+            <div>
+              <span className="font-bold uppercase tracking-wider block text-amber-300">
+                Condições Meteorológicas & Maré
+              </span>
+              <span>{activeAlerts.join(' • ')}</span>
             </div>
-            <button
-              onClick={() => setIsAlertModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition shrink-0"
-            >
-              Ajustar Limites
-            </button>
           </div>
         )}
 
