@@ -129,7 +129,7 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
       {/* Main Stats Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-5 items-center relative z-10">
         {/* Left: Height Number, Depth & Instantaneous Wind */}
-        <div className="lg:col-span-5 flex items-center gap-5">
+        <div className="lg:col-span-5 order-1 flex items-center gap-5">
           {/* Vertical Level Tube Visualizer */}
           <div className="relative w-12 h-48 bg-slate-950 rounded-2xl border-2 border-slate-800 overflow-hidden flex flex-col justify-end p-1 shadow-inner shrink-0">
             {/* Scale markers */}
@@ -223,7 +223,7 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
         </div>
 
         {/* Center: Cycle Progress & Extremum Points */}
-        <div className="lg:col-span-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 flex flex-col justify-between h-full">
+        <div className="lg:col-span-4 order-3 lg:order-2 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 flex flex-col justify-between h-full">
           <div className="flex items-center justify-between text-xs font-mono pb-2 border-b border-slate-800">
             <span className="text-slate-400 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-cyan-400" />
@@ -267,7 +267,7 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
         </div>
 
         {/* Right: Amplitude, Regime & Marine Conditions */}
-        <div className="lg:col-span-3 space-y-2.5">
+        <div className="lg:col-span-3 order-2 lg:order-3 space-y-2.5">
           {/* Marine Conditions with Unit Switcher */}
           <div className={`p-3 rounded-xl border transition ${
             isGustAlert

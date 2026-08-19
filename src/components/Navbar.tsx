@@ -1,5 +1,5 @@
 import React from 'react';
-import { Anchor, Compass, FileText, Map, Table, Waves, MapPin } from 'lucide-react';
+import { Anchor, Compass, FileText, Map, Table, Waves } from 'lucide-react';
 import { PortConfig, CustomUserLocation } from '../types/maritime';
 import { IntersalLogo } from './IntersalLogo';
 
@@ -35,28 +35,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5 font-sans">
                   Sala de Controle - Marés
                 </h1>
-                <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/50">
-                  DHN 2026
-                </span>
               </div>
-              <p className="text-xs text-slate-400 font-mono flex items-center gap-2">
+              <p className="text-xs text-slate-400 font-sans flex items-center gap-1.5">
                 <span className="font-medium text-slate-300">Areia Branca & Macau - RN</span>
-                <span className="text-slate-600">•</span>
-                <span className="text-cyan-400 font-semibold">{userLocation.dmsLat} {userLocation.dmsLng}</span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 ml-auto">
-            {/* Fixed Location Pill */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/80 text-slate-200 border border-slate-700 text-xs font-mono shadow-sm">
-              <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-              <span className="hidden lg:inline text-slate-400">Posição:</span>
-              <span className="font-bold text-cyan-300">{userLocation.dmsLat} {userLocation.dmsLng}</span>
-            </div>
-
             {/* Live Clock */}
-            <div className="hidden md:flex flex-col text-right font-mono bg-slate-800/60 px-3 py-1 rounded-lg border border-slate-700/60">
+            <div className="flex flex-col text-right font-mono bg-slate-800/60 px-3 py-1 rounded-lg border border-slate-700/60">
               <span className="text-xs font-bold text-slate-100">
                 {currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} <span className="text-[10px] text-cyan-400 font-normal">BRT (UTC-3)</span>
               </span>
@@ -135,7 +123,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Table className="w-3.5 h-3.5" />
-              Tábua DHN 2026
+              Tábua de Marés
             </button>
 
             <button

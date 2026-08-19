@@ -624,7 +624,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
           Passe o mouse ou toque sobre a curva para inspecionar qualquer horário das 48 horas (hoje e amanhã).
         </span>
         <span className="font-mono text-[11px] text-slate-500">
-          DHN Carta 703 • 48 Horas Contínuas
+          Carta Náutica {port.chartNumber} • 48 Horas Contínuas
         </span>
       </div>
     </div>

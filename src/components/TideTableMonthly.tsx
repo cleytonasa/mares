@@ -78,14 +78,14 @@ export const TideTableMonthly: React.FC<TideTableMonthlyProps> = ({
           <div className="flex items-center gap-2">
             <h3 className="text-base font-bold text-white uppercase tracking-tight flex items-center gap-2">
               <Calendar className="w-5 h-5 text-cyan-400" />
-              Tábua Oficial de Marés {year} • DHN
+              Tábua Anual de Marés {year}
             </h3>
             <span className="px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/50 text-xs font-mono font-bold">
               {port.name}
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1 font-mono">
-            {port.fullName} • {port.coordinates.dmsLat} {port.coordinates.dmsLng} • Nível Médio {port.meanLevel}m
+            {port.fullName} • Nível Médio {port.meanLevel}m
           </p>
         </div>
 

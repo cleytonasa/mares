@@ -1,7 +1,5 @@
 ---
 deployment:
   tasks:
-    - /bin/cp -rf production/* .
-    - /bin/cp -rf production/.htaccess .
-    - /bin/echo "Deploy da pasta production concluido com sucesso!"
+    - /bin/echo "Deploy sincronizado com sucesso!"
 

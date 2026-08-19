@@ -57,7 +57,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     msg += `🧭 *Posição:* ${port.coordinates.dmsLat} ${port.coordinates.dmsLng}\n`;
     msg += `🌙 *Fase da Lua:* ${getMoonText()}\n\n`;
 
-    msg += `📊 *TÁBUA OFICIAL DHN (PREIA-MAR / BAIXA-MAR):*\n`;
+    msg += `📊 *PREVISÃO DE MARÉS (PREIA-MAR / BAIXA-MAR):*\n`;
     dayTides.events.forEach((evt) => {
       const typeLabel = evt.type === 'high' ? '🔼 PREIA-MAR' : '🔽 BAIXA-MAR';
       const h = (evt.height * port.heightMultiplier).toFixed(2);
