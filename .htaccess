@@ -1,4 +1,10 @@
-DirectoryIndex production/index.html dist/index.html index.html
+# Permissões de Acesso e Índices
+Options -Indexes +FollowSymLinks
+DirectoryIndex production/index.html dist/index.html index.html index.php
+
+<IfModule mod_authz_core.c>
+  Require all granted
+</IfModule>
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
@@ -17,6 +23,7 @@ DirectoryIndex production/index.html dist/index.html index.html
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^(.*)$ production/index.html [L]
 </IfModule>
+
 
 # GZIP Compression
 <IfModule mod_deflate.c>
