@@ -37,7 +37,6 @@ export const getSavedAnnotations = (): TideAnnotation[] => {
       if (urlFrota) {
         const decoded = decodeAnnotationsFromUrl(urlFrota);
         if (decoded !== null && Array.isArray(decoded)) {
-          // Persist to localStorage for future visits
           localStorage.setItem(STORAGE_KEY, JSON.stringify(decoded));
           return decoded;
         }
@@ -49,12 +48,10 @@ export const getSavedAnnotations = (): TideAnnotation[] => {
     if (raw !== null) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        // Return whatever is stored (including empty array [] when deleted)
         return parsed;
       }
     }
 
-    // 3. Clean fallback: return empty list so deleted or unconfigured fleet is never forced with ghost barges
     return [];
   } catch (e) {
     console.error('Failed to parse annotations:', e);
@@ -62,24 +59,69 @@ export const getSavedAnnotations = (): TideAnnotation[] => {
   }
 };
 
-export const clearAllAnnotationsFromStorage = (): void => {
+// Fetch latest annotations directly from the server API
+export const syncAnnotationsFromServer = async (): Promise<TideAnnotation[]> => {
+  try {
+    const res = await fetch('/api/annotations', {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        // Compare with current local cache
+        const currentRaw = localStorage.getItem(STORAGE_KEY);
+        const newRaw = JSON.stringify(data);
+        if (currentRaw !== newRaw) {
+          localStorage.setItem(STORAGE_KEY, newRaw);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('tide_annotations_updated', { detail: data }));
+          }
+        }
+        return data;
+      }
+    }
+  } catch (err) {
+    // Network failure or offline: fallback silently to local storage
+  }
+  return getSavedAnnotations();
+};
+
+export const clearAllAnnotationsFromStorage = async (): Promise<void> => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('tide_annotations_updated', { detail: [] }));
     }
+
+    // Notify backend server
+    await fetch('/api/annotations', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    }).catch(() => {});
   } catch (e) {
     console.error('Failed to clear annotations:', e);
   }
 };
 
-export const saveAnnotationsToStorage = (list: TideAnnotation[]): void => {
+export const saveAnnotationsToStorage = async (list: TideAnnotation[]): Promise<void> => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
     // Dispatch custom event for same-tab / multi-component sync
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('tide_annotations_updated', { detail: list }));
     }
+
+    // Persist to central backend server
+    await fetch('/api/annotations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(list),
+    }).catch(() => {});
   } catch (e) {
     console.error('Failed to save annotations:', e);
   }
