@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TideAnnotation, AnnotationCategory, BargeTripStatus, BARGE_FLEET_PRESETS } from '../types/maritime';
 import { Ship, Anchor, Waves, AlertTriangle, Compass, Clock, X, Trash2, Edit3, Lock, ShieldCheck } from 'lucide-react';
+import { formatBargeTime, formatBargeDate, createBargeDateTimeString } from '../utils/dateUtils';
 
 interface AnnotationModalProps {
   isOpen: boolean;
@@ -29,24 +30,19 @@ export const AnnotationModal: React.FC<AnnotationModalProps> = ({
   const [notes, setNotes] = useState<string>('');
   const [color, setColor] = useState<string>('#38bdf8');
 
-  // Format initial values
+  // Format initial values strictly in local time coordinates
   useEffect(() => {
     if (editingAnnotation) {
       setTitle(editingAnnotation.title);
       setCategory(editingAnnotation.category);
       setBargeStatus(editingAnnotation.bargeStatus || 'Operação de Descarga');
-      const dt = new Date(editingAnnotation.dateTime);
-      const hours = String(dt.getHours()).padStart(2, '0');
-      const mins = String(dt.getMinutes()).padStart(2, '0');
-      setTimeStr(`${hours}:${mins}`);
-      setDateStr(dt.toISOString().split('T')[0]);
+      setTimeStr(formatBargeTime(editingAnnotation.dateTime));
+      setDateStr(formatBargeDate(editingAnnotation.dateTime));
       setNotes(editingAnnotation.notes || '');
       setColor(editingAnnotation.color || '#38bdf8');
     } else {
-      const hours = String(selectedDateTime.getHours()).padStart(2, '0');
-      const mins = String(selectedDateTime.getMinutes()).padStart(2, '0');
-      setTimeStr(`${hours}:${mins}`);
-      setDateStr(selectedDateTime.toISOString().split('T')[0]);
+      setTimeStr(formatBargeTime(selectedDateTime));
+      setDateStr(formatBargeDate(selectedDateTime));
       setTitle('Dona Yolanda');
       setCategory('barcaca');
       setBargeStatus('Operação de Descarga');
@@ -67,16 +63,14 @@ export const AnnotationModal: React.FC<AnnotationModalProps> = ({
     e.preventDefault();
     if (!title.trim()) return;
 
-    // Combine date and time
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const [hours, mins] = timeStr.split(':').map(Number);
-    const targetDt = new Date(year, month - 1, day, hours, mins, 0);
+    // Standardized ISO-like string (YYYY-MM-DDTHH:mm:00) without timezone shift
+    const dateTime = createBargeDateTimeString(dateStr, timeStr);
 
     onSave(
       {
         portId,
         title: title.trim(),
-        dateTime: targetDt.toISOString(),
+        dateTime,
         category,
         bargeStatus: category === 'barcaca' ? bargeStatus : undefined,
         notes: notes.trim(),

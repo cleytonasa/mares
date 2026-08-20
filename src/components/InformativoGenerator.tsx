@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { FileText, Copy, Check, Printer, Waves, Wind, Ship } from 'lucide-react';
+import { FileText, Copy, Check, Printer, Waves, Wind, Ship, Share2 } from 'lucide-react';
 import { PortConfig, WeatherData } from '../types/maritime';
 import { getTidesForDay } from '../data/tideData2026';
 import { calculateCurrentTide, get24hTideCurve, getNextHighTide } from '../utils/tideCalculations';
-import { getSavedAnnotations } from '../services/annotationService';
+import { getSavedAnnotations, generateShareableFleetUrl } from '../services/annotationService';
+import { formatBargeTime, formatBargeDate, parseBargeDateTime } from '../utils/dateUtils';
 import { IntersalLogo } from './IntersalLogo';
 
 interface InformativoGeneratorProps {
@@ -20,10 +21,12 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
   currentTime,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth() + 1;
   const day = selectedDate.getDate();
+  const targetDateStr = formatBargeDate(selectedDate);
 
   const dayTides = getTidesForDay(year, month, day);
   const hourlyCurve = get24hTideCurve(selectedDate, port, 24); // 24 hourly points
@@ -33,14 +36,13 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
   const dayAnnotations = allAnnotations
     .filter((a) => {
       if (a.portId !== port.id) return false;
-      const aDate = new Date(a.dateTime);
-      return (
-        aDate.getFullYear() === year &&
-        aDate.getMonth() + 1 === month &&
-        aDate.getDate() === day
-      );
+      return formatBargeDate(a.dateTime) === targetDateStr;
     })
-    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+    .sort((a, b) => {
+      const tA = parseBargeDateTime(a.dateTime).getTime();
+      const tB = parseBargeDateTime(b.dateTime).getTime();
+      return tA - tB;
+    });
 
   const dateFormatted = selectedDate.toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -64,7 +66,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     }
   };
 
-  // Generate clean WhatsApp message
+  // Generate clean WhatsApp message with exact operator barge maneuver times & share link
   const generateWhatsAppText = () => {
     let msg = `🌊 *BOLETIM INFORMATIVO DE MARÉS*\n`;
     msg += `📍 *${port.fullName.toUpperCase()}*\n`;
@@ -82,13 +84,13 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     if (dayAnnotations.length > 0) {
       msg += `\n🚢 *PROGRAMAÇÃO DE BARCAÇAS & OPERAÇÕES:*\n`;
       dayAnnotations.forEach((ann) => {
-        const dt = new Date(ann.dateTime);
-        const timeStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const timeStr = formatBargeTime(ann.dateTime);
+        const dt = parseBargeDateTime(ann.dateTime);
         const nextHigh = getNextHighTide(dt, port);
         const icon = ann.category === 'barcaca' ? '⛴️' : ann.category === 'navio' ? '🚢' : '⚓';
         const statusEmoji = ann.bargeStatus === 'Finalizada' ? '🟢' : ann.bargeStatus === 'Operação de Descarga' ? '🟣' : '🔴';
 
-        msg += `• ${icon} *${ann.title}* (${timeStr})\n`;
+        msg += `• ${icon} *${ann.title}* (${timeStr} BRT)\n`;
         if (ann.bargeStatus) {
           msg += `  - Status: ${statusEmoji} *${ann.bargeStatus}*\n`;
         }
@@ -111,7 +113,13 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     msg += `• Calado máximo seguro na maré cheia: *~${(port.criticalShallowDepth + 3.2).toFixed(1)} m*\n`;
     msg += `• Atenção ao banco arenoso da Ponta do Upanema / Foz do Rio Açu.\n`;
     msg += `• Contato Praticagem / Controle: Canal VHF 16 / 68.\n\n`;
-    msg += `_Emitido pelo Sistema de Controle de Marés de Areia Branca & Macau._`;
+
+    const shareUrl = generateShareableFleetUrl(allAnnotations);
+    if (shareUrl) {
+      msg += `📱 *Acompanhamento em Tempo Real:* ${shareUrl}\n\n`;
+    }
+
+    msg += `_Emitido pelo Sistema Informativo de Marés de Areia Branca & Macau._`;
 
     return msg;
   };
@@ -121,6 +129,15 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
+  };
+
+  const handleCopyLink = () => {
+    const shareUrl = generateShareableFleetUrl(allAnnotations);
+    if (shareUrl) {
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 3000);
+    }
   };
 
   const handlePrint = () => {
@@ -141,7 +158,20 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleCopyLink}
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition border ${
+              copiedLink
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-500'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+            }`}
+            title="Copiar link com a programação das barcaças para acesso externo"
+          >
+            {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4 text-cyan-400" />}
+            {copiedLink ? 'Link Copiado!' : 'Copiar Link c/ Barcaças'}
+          </button>
+
           <button
             onClick={handleCopyWhatsApp}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-md ${
@@ -273,8 +303,8 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
                   {dayAnnotations.map((ann) => {
-                    const dt = new Date(ann.dateTime);
-                    const timeStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    const timeStr = formatBargeTime(ann.dateTime);
+                    const dt = parseBargeDateTime(ann.dateTime);
                     const nextHigh = getNextHighTide(dt, port);
                     const itemColor = ann.color || '#38bdf8';
 
@@ -401,4 +431,5 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     </div>
   );
 };
+
 

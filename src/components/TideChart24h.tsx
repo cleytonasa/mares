@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Info, Plus, Ship, Anchor, Lock, Unlock, Edit2, Trash2, Tag } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Info, Plus, Ship, Anchor, Lock, Unlock, Edit2, Trash2, Tag, Share2, Check } from 'lucide-react';
 import { PortConfig, TideAnnotation } from '../types/maritime';
 import { get48hTideCurve, calculateCurrentTide, getNextHighTide } from '../utils/tideCalculations';
 import { getTidesForDay } from '../data/tideData2026';
@@ -10,7 +10,9 @@ import {
   saveAnnotationsToStorage,
   isOperatorAuthorizedSession,
   setOperatorAuthorizedSession,
+  generateShareableFleetUrl,
 } from '../services/annotationService';
+import { parseBargeDateTime, formatBargeTime, formatBargeDate } from '../utils/dateUtils';
 
 interface TideChart48hProps {
   port: PortConfig;
@@ -33,6 +35,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
   const [isAnnotationModalOpen, setIsAnnotationModalOpen] = useState<boolean>(false);
   const [editingAnnotation, setEditingAnnotation] = useState<TideAnnotation | null>(null);
   const [modalTargetDate, setModalTargetDate] = useState<Date>(new Date());
+  const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   const [hoveredAnnotation, setHoveredAnnotation] = useState<{
     annotation: TideAnnotation;
@@ -42,10 +45,18 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
     y: number;
   } | null>(null);
 
-  // Load annotations & session auth on mount
+  // Load annotations & session auth on mount and listen to updates
   useEffect(() => {
-    setAnnotations(getSavedAnnotations());
-    setIsOperator(isOperatorAuthorizedSession());
+    const refreshData = () => {
+      setAnnotations(getSavedAnnotations());
+      setIsOperator(isOperatorAuthorizedSession());
+    };
+    refreshData();
+
+    window.addEventListener('tide_annotations_updated', refreshData);
+    return () => {
+      window.removeEventListener('tide_annotations_updated', refreshData);
+    };
   }, []);
 
   const handleSaveAnnotation = (
@@ -75,6 +86,15 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
     saveAnnotationsToStorage(updated);
   };
 
+  const handleCopyShareLink = () => {
+    const shareUrl = generateShareableFleetUrl(annotations);
+    if (shareUrl) {
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 3000);
+    }
+  };
+
   const handleOpenAddModal = (initialDate?: Date) => {
     if (!isOperator) {
       setIsPinModalOpen(true);
@@ -91,7 +111,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
       return;
     }
     setEditingAnnotation(ann);
-    setModalTargetDate(new Date(ann.dateTime));
+    setModalTargetDate(parseBargeDateTime(ann.dateTime));
     setIsAnnotationModalOpen(true);
   };
 
@@ -163,7 +183,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
   const windowAnnotations = annotations
     .filter((a) => a.portId === port.id)
     .map((a) => {
-      const aDate = new Date(a.dateTime);
+      const aDate = parseBargeDateTime(a.dateTime);
       const aTs = aDate.getTime();
       const fraction = (aTs - startWindowTs) / (48 * 60 * 60 * 1000);
       const inWindow = fraction >= 0 && fraction <= 1;
@@ -245,7 +265,20 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
         </div>
 
         {/* Date Selector & Add Marker Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleCopyShareLink}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition ${
+              copiedLink
+                ? 'bg-cyan-950 text-cyan-300 border-cyan-500'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            }`}
+            title="Copiar Link da Programação Completa para Acesso Externo"
+          >
+            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-cyan-400" />}
+            <span>{copiedLink ? 'Link Copiado!' : 'Copiar Link c/ Barcaças'}</span>
+          </button>
+
           <button
             onClick={() => handleOpenAddModal()}
             className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-cyan-600/30 transition"
@@ -662,7 +695,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                 {hoveredAnnotation.annotation.category === 'barcaca' ? '⛴️' : '🚢'} {hoveredAnnotation.annotation.title}
               </span>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-200 border border-cyan-800">
-                {new Date(hoveredAnnotation.annotation.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                {formatBargeTime(hoveredAnnotation.annotation.dateTime)} BRT
               </span>
             </div>
 
@@ -685,7 +718,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             )}
 
             {(() => {
-              const annDate = new Date(hoveredAnnotation.annotation.dateTime);
+              const annDate = parseBargeDateTime(hoveredAnnotation.annotation.dateTime);
               const nextHigh = getNextHighTide(annDate, port);
               return (
                 <div className="mt-1.5 flex justify-between items-center gap-2 text-[11px] font-mono bg-slate-900/90 px-2 py-1 rounded-lg border border-slate-800">
@@ -743,8 +776,8 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             {windowAnnotations.map((item) => {
-              const dt = new Date(item.annotation.dateTime);
-              const timeDisplay = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+              const dt = parseBargeDateTime(item.annotation.dateTime);
+              const timeDisplay = formatBargeTime(item.annotation.dateTime);
               const dateDisplay = dt.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
               const itemColor = item.annotation.color || '#38bdf8';
               const nextHigh = getNextHighTide(dt, port);
@@ -763,7 +796,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                     </div>
 
                     <div className="text-[11px] text-cyan-300 font-mono flex flex-wrap items-center gap-1.5">
-                      <span>🕒 {timeDisplay}</span>
+                      <span>🕒 {timeDisplay} BRT</span>
                       <span>•</span>
                       <span className="text-emerald-300 font-semibold flex items-center gap-1">
                         <span>Preamar:</span>
