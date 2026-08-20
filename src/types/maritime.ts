@@ -136,3 +136,37 @@ export interface BarStatusEvaluation {
     maxHeight: number;
   };
 }
+
+export type AnnotationCategory = 'barcaca' | 'rebocador' | 'navio' | 'faina' | 'calado' | 'aviso';
+
+export type BargeTripStatus = 
+  | 'Finalizada'
+  | 'Operação de Descarga'
+  | 'No largo / Aguardando';
+
+export interface TideAnnotation {
+  id: string;
+  portId: 'areia_branca' | 'macau';
+  dateTime: string; // ISO String format e.g. "2026-08-20T14:30:00"
+  title: string; // e.g. "Dona Yolanda", "Navio Graneleiro"
+  category: AnnotationCategory;
+  bargeStatus?: BargeTripStatus;
+  estimatedDraft?: number; // Calado em metros ex: 2.8
+  notes?: string; // Observações da manobra
+  color?: string;
+  createdBy?: string;
+  createdAt: string;
+}
+
+export const BARGE_FLEET_PRESETS = [
+  { id: 'b1', name: 'Dona Yolanda', type: 'barcaca', defaultDraft: 2.8, color: '#38bdf8' },
+  { id: 'b2', name: 'Dona Zita', type: 'barcaca', defaultDraft: 2.8, color: '#06b6d4' },
+  { id: 'b3', name: 'Cmt Paschoal', type: 'barcaca', defaultDraft: 2.8, color: '#3b82f6' },
+  { id: 'b4', name: 'N.S das Vitórias', type: 'barcaca', defaultDraft: 2.8, color: '#6366f1' },
+  { id: 'b5', name: 'Porto de Galinhos', type: 'barcaca', defaultDraft: 2.8, color: '#8b5cf6' },
+  { id: 'reb', name: 'Rebocador de Apoio', type: 'rebocador', defaultDraft: 2.2, color: '#f59e0b' },
+  { id: 'nav', name: 'Navio Graneleiro', type: 'navio', defaultDraft: 7.5, color: '#ec4899' },
+  { id: 'fai', name: 'Faina de Carregamento', type: 'faina', defaultDraft: 0, color: '#10b981' },
+  { id: 'cal', name: 'Janela de Calado', type: 'calado', defaultDraft: 3.2, color: '#14b8a6' },
+  { id: 'avi', name: 'Aviso Operacional', type: 'aviso', defaultDraft: 0, color: '#f43f5e' },
+];

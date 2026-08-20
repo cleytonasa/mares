@@ -26,7 +26,7 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const [mapType, setMapType] = useState<'satellite' | 'street' | 'nautical'>('satellite');
+  const [mapType, setMapType] = useState<'satellite' | 'nautical'>('nautical');
   const [showRangeRings, setShowRangeRings] = useState<boolean>(true);
 
   // Initialize Map Once
@@ -92,18 +92,14 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
         attribution: 'Esri World Imagery, DigitalGlobe',
         maxZoom: 18,
       }).addTo(map);
-    } else if (mapType === 'nautical') {
+    } else {
+      // Nautical Chart (OpenSeaMap overlays)
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 18,
       }).addTo(map);
       L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; OpenSeaMap contributors',
-        maxZoom: 18,
-      }).addTo(map);
-    } else {
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 18,
       }).addTo(map);
     }
@@ -319,14 +315,6 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
               }`}
             >
               Carta Náutica
-            </button>
-            <button
-              onClick={() => setMapType('street')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition ${
-                mapType === 'street' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Mapa
             </button>
           </div>
         </div>

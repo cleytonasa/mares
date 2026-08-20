@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { FileText, Copy, Check, Printer, Waves, Wind } from 'lucide-react';
+import { FileText, Copy, Check, Printer, Waves, Wind, Ship } from 'lucide-react';
 import { PortConfig, WeatherData } from '../types/maritime';
 import { getTidesForDay } from '../data/tideData2026';
 import { calculateCurrentTide, get24hTideCurve } from '../utils/tideCalculations';
+import { getSavedAnnotations } from '../services/annotationService';
 import { IntersalLogo } from './IntersalLogo';
 
 interface InformativoGeneratorProps {
@@ -26,6 +27,20 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
 
   const dayTides = getTidesForDay(year, month, day);
   const hourlyCurve = get24hTideCurve(selectedDate, port, 24); // 24 hourly points
+
+  // Load scheduled barge operations for the day and port
+  const allAnnotations = getSavedAnnotations();
+  const dayAnnotations = allAnnotations
+    .filter((a) => {
+      if (a.portId !== port.id) return false;
+      const aDate = new Date(a.dateTime);
+      return (
+        aDate.getFullYear() === year &&
+        aDate.getMonth() + 1 === month &&
+        aDate.getDate() === day
+      );
+    })
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
   const dateFormatted = selectedDate.toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -63,6 +78,26 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
       const h = (evt.height * port.heightMultiplier).toFixed(2);
       msg += `• *${evt.time}* - ${typeLabel}: *${h} m*\n`;
     });
+
+    if (dayAnnotations.length > 0) {
+      msg += `\n🚢 *PROGRAMAÇÃO DE BARCAÇAS & OPERAÇÕES:*\n`;
+      dayAnnotations.forEach((ann) => {
+        const dt = new Date(ann.dateTime);
+        const timeStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const tide = calculateCurrentTide(dt, port);
+        const icon = ann.category === 'barcaca' ? '⛴️' : ann.category === 'navio' ? '🚢' : '⚓';
+        const statusEmoji = ann.bargeStatus === 'Finalizada' ? '🟢' : ann.bargeStatus === 'Operação de Descarga' ? '🟣' : '🔴';
+
+        msg += `• ${icon} *${ann.title}* (${timeStr})\n`;
+        if (ann.bargeStatus) {
+          msg += `  - Status: ${statusEmoji} *${ann.bargeStatus}*\n`;
+        }
+        msg += `  - Maré estimada: *${tide.currentHeight.toFixed(2)} m* | Calado: *${ann.estimatedDraft ? `${ann.estimatedDraft} m` : '-'}*\n`;
+        if (ann.notes && ann.notes.trim()) {
+          msg += `  - Obs: _${ann.notes.trim()}_\n`;
+        }
+      });
+    }
 
     if (weather) {
       msg += `\n💨 *METEOROLOGIA & MAR:*\n`;
@@ -213,11 +248,83 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
           </div>
         </div>
 
+        {/* Section: Programação de Barcaças e Operações Náuticas */}
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5 flex items-center gap-1.5 font-mono">
+            <Ship className="w-4 h-4" />
+            2. PROGRAMAÇÃO DE BARCAÇAS & MANOBRAS OPERACIONAIS
+          </h3>
+
+          {dayAnnotations.length === 0 ? (
+            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono text-slate-400">
+              Nenhuma manobra de barcaça programada para esta data ({dateFormatted}).
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-slate-800">
+              <table className="w-full text-xs font-mono text-left">
+                <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
+                  <tr>
+                    <th className="p-2.5">Embarcação</th>
+                    <th className="p-2.5">Horário (BRT)</th>
+                    <th className="p-2.5">Status Operacional</th>
+                    <th className="p-2.5">Maré Prevista</th>
+                    <th className="p-2.5">Calado</th>
+                    <th className="p-2.5">Observações / VHF</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
+                  {dayAnnotations.map((ann) => {
+                    const dt = new Date(ann.dateTime);
+                    const timeStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    const tide = calculateCurrentTide(dt, port);
+                    const itemColor = ann.color || '#38bdf8';
+
+                    return (
+                      <tr key={ann.id} className="hover:bg-slate-900/40">
+                        <td className="p-2.5 font-bold text-white flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: itemColor }} />
+                          <span>{ann.category === 'barcaca' ? '⛴️' : '🚢'} {ann.title}</span>
+                        </td>
+                        <td className="p-2.5 text-cyan-300 font-bold">{timeStr}</td>
+                        <td className="p-2.5">
+                          {ann.bargeStatus ? (
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                                ann.bargeStatus === 'Finalizada'
+                                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60'
+                                  : ann.bargeStatus === 'Operação de Descarga'
+                                  ? 'bg-purple-950/80 text-purple-300 border-purple-700/60'
+                                  : 'bg-rose-950/80 text-rose-300 border-rose-700/60'
+                              }`}
+                            >
+                              {ann.bargeStatus === 'Finalizada' && '🟢 '}
+                              {ann.bargeStatus === 'Operação de Descarga' && '🟣 '}
+                              {ann.bargeStatus === 'No largo / Aguardando' && '🔴 '}
+                              {ann.bargeStatus}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </td>
+                        <td className="p-2.5 text-emerald-300 font-bold">{tide.currentHeight.toFixed(2)} m</td>
+                        <td className="p-2.5 text-amber-300 font-bold">{ann.estimatedDraft ? `${ann.estimatedDraft} m` : '-'}</td>
+                        <td className="p-2.5 text-slate-300 italic text-[11px]">
+                          {ann.notes && ann.notes.trim() ? ann.notes : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         {/* Hourly Progression Table */}
         <div>
           <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5 flex items-center gap-1.5 font-mono">
             <span>🕒</span>
-            2. PROJEÇÃO HORÁRIA CONTÍNUA (ALTURA & LÂMINA D'ÁGUA)
+            3. PROJEÇÃO HORÁRIA CONTÍNUA (ALTURA & LÂMINA D'ÁGUA)
           </h3>
           <div className="overflow-x-auto rounded-xl border border-slate-800">
             <table className="w-full text-xs font-mono text-left">
@@ -260,7 +367,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5 flex items-center gap-1.5 font-mono">
               <Wind className="w-4 h-4" />
-              3. METEOROLOGIA & CONDIÇÕES DO MAR
+              4. METEOROLOGIA & CONDIÇÕES DO MAR
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-xs font-mono bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
               <div>
@@ -294,3 +401,4 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     </div>
   );
 };
+
