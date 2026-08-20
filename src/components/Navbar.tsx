@@ -69,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Anchor className="w-3.5 h-3.5" />
-              Areia Branca (TERMISA)
+              Areia Branca - RN
             </button>
             <button
               id="port-select-macau"

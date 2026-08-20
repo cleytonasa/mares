@@ -49,8 +49,8 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
 
   // SVG dimensions
   const svgWidth = 900;
-  const svgHeight = 280;
-  const padding = { top: 35, right: 30, bottom: 45, left: 45 };
+  const svgHeight = 305;
+  const padding = { top: 35, right: 30, bottom: 68, left: 45 };
 
   const chartWidth = svgWidth - padding.left - padding.right;
   const chartHeight = svgHeight - padding.top - padding.bottom;
@@ -83,25 +83,6 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
   const currentCursorX = scaleX(Math.max(0, Math.min(1, currentWindowFraction)));
 
   const isViewingToday = selectedDate.toDateString() === currentTime.toDateString();
-
-  // Helper for Moon Phase label
-  const getMoonBadge = (phase: string) => {
-    switch (phase) {
-      case 'full':
-        return { label: 'Lua Cheia', desc: 'Sizígia Máxima', icon: '🌕', color: 'text-amber-300' };
-      case 'new':
-        return { label: 'Lua Nova', desc: 'Sizígia', icon: '🌑', color: 'text-cyan-300' };
-      case 'first_quarter':
-        return { label: 'Q. Crescente', desc: 'Quadratura', icon: '🌓', color: 'text-blue-300' };
-      case 'last_quarter':
-        return { label: 'Q. Minguante', desc: 'Quadratura', icon: '🌗', color: 'text-blue-300' };
-      default:
-        return { label: 'Intermediária', desc: 'Maré Média', icon: '🌙', color: 'text-slate-300' };
-    }
-  };
-
-  const moon1 = getMoonBadge(day1Tides.moonPhase);
-  const moon2 = getMoonBadge(day2Tides.moonPhase);
 
   const handlePrevDay = () => {
     const d = new Date(selectedDate);
@@ -206,74 +187,6 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
         </div>
       </div>
 
-      {/* 2-Day Chronological Events Header Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Day 1 Card */}
-        <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
-                {d1.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short' })}
-              </span>
-              {isViewingToday && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 font-mono">
-                  HOJE
-                </span>
-              )}
-            </div>
-            <span className="text-xs font-mono flex items-center gap-1 text-slate-300">
-              <span>{moon1.icon}</span>
-              <span className={moon1.color}>{moon1.label}</span>
-            </span>
-          </div>
-
-          {/* Events */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {day1Tides.events.map((evt, idx) => (
-              <span
-                key={idx}
-                className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold border ${
-                  evt.type === 'high'
-                    ? 'bg-cyan-950/70 text-cyan-300 border-cyan-700/50'
-                    : 'bg-slate-800/90 text-slate-300 border-slate-700'
-                }`}
-              >
-                {evt.type === 'high' ? 'PM' : 'BM'}: {evt.time} ({(evt.height * port.heightMultiplier).toFixed(2)}m)
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Day 2 Card */}
-        <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
-              {d2.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short' })}
-            </span>
-            <span className="text-xs font-mono flex items-center gap-1 text-slate-300">
-              <span>{moon2.icon}</span>
-              <span className={moon2.color}>{moon2.label}</span>
-            </span>
-          </div>
-
-          {/* Events */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {day2Tides.events.map((evt, idx) => (
-              <span
-                key={idx}
-                className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold border ${
-                  evt.type === 'high'
-                    ? 'bg-cyan-950/70 text-cyan-300 border-cyan-700/50'
-                    : 'bg-slate-800/90 text-slate-300 border-slate-700'
-                }`}
-              >
-                {evt.type === 'high' ? 'PM' : 'BM'}: {evt.time} ({(evt.height * port.heightMultiplier).toFixed(2)}m)
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* SVG Chart Container - Fully visible and scalable on mobile screens */}
       <div className="relative w-full overflow-hidden select-none pt-2 bg-slate-950/40 rounded-xl border border-slate-800/60 p-1 sm:p-2">
         <svg
@@ -312,51 +225,16 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             opacity="0.1"
           />
 
-          {/* Day Label Badges at Top of Chart Area */}
-          <text
-            x={scaleX(0.25)}
-            y={padding.top - 12}
-            fill="#38bdf8"
-            fontSize="12"
-            fontFamily="monospace"
-            fontWeight="bold"
-            textAnchor="middle"
-          >
-            {d1.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
-          </text>
-          <text
-            x={scaleX(0.75)}
-            y={padding.top - 12}
-            fill="#94a3b8"
-            fontSize="12"
-            fontFamily="monospace"
-            fontWeight="bold"
-            textAnchor="middle"
-          >
-            {d2.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
-          </text>
-
           {/* Midnight 24h / 00h Vertical Divider Line */}
           <line
             x1={midnightX}
-            y1={padding.top - 20}
+            y1={padding.top}
             x2={midnightX}
             y2={svgHeight - padding.bottom}
             stroke="#0ea5e9"
             strokeWidth="1.5"
             strokeDasharray="4 3"
           />
-          <text
-            x={midnightX}
-            y={padding.top - 8}
-            fill="#0ea5e9"
-            fontSize="10"
-            fontFamily="monospace"
-            fontWeight="bold"
-            textAnchor="middle"
-          >
-            00:00 (Virada de Dia)
-          </text>
 
           {/* Grid lines & Y Axis labels */}
           {[0, 1, 2, 3, 4].map((level) => {
@@ -434,7 +312,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                 />
                 <text
                   x={x}
-                  y={svgHeight - padding.bottom + 18}
+                  y={svgHeight - padding.bottom + 17}
                   fill={item.hour === 24 ? '#38bdf8' : '#94a3b8'}
                   fontSize="11"
                   fontFamily="monospace"
@@ -443,9 +321,69 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                 >
                   {item.label}
                 </text>
+                {item.hour === 24 && (
+                  <text
+                    x={x}
+                    y={svgHeight - padding.bottom + 29}
+                    fill="#0ea5e9"
+                    fontSize="9"
+                    fontFamily="monospace"
+                    fontWeight="bold"
+                    textAnchor="middle"
+                  >
+                    Virada de Dia
+                  </text>
+                )}
               </g>
             );
           })}
+
+          {/* Day Date Legends positioned below the hours axis */}
+          <g>
+            {/* Day 1 bracket & date */}
+            <line
+              x1={scaleX(0.04)}
+              y1={svgHeight - padding.bottom + 34}
+              x2={scaleX(0.44)}
+              y2={svgHeight - padding.bottom + 34}
+              stroke="#334155"
+              strokeWidth="1"
+              strokeDasharray="2 2"
+            />
+            <text
+              x={scaleX(0.25)}
+              y={svgHeight - padding.bottom + 50}
+              fill="#38bdf8"
+              fontSize="12"
+              fontFamily="monospace"
+              fontWeight="bold"
+              textAnchor="middle"
+            >
+              {d1.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+            </text>
+
+            {/* Day 2 bracket & date */}
+            <line
+              x1={scaleX(0.56)}
+              y1={svgHeight - padding.bottom + 34}
+              x2={scaleX(0.96)}
+              y2={svgHeight - padding.bottom + 34}
+              stroke="#334155"
+              strokeWidth="1"
+              strokeDasharray="2 2"
+            />
+            <text
+              x={scaleX(0.75)}
+              y={svgHeight - padding.bottom + 50}
+              fill="#94a3b8"
+              fontSize="12"
+              fontFamily="monospace"
+              fontWeight="bold"
+              textAnchor="middle"
+            >
+              {d2.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+            </text>
+          </g>
 
           {/* 48h Tide Area and Line */}
           <path d={areaD} fill="url(#tideGradient48)" />

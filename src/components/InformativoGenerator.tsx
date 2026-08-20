@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Copy, Check, Printer, Share2, Anchor, Waves, Wind, ShieldAlert, Sparkles } from 'lucide-react';
+import { FileText, Copy, Check, Printer, Waves, Wind } from 'lucide-react';
 import { PortConfig, WeatherData } from '../types/maritime';
 import { getTidesForDay } from '../data/tideData2026';
 import { calculateCurrentTide, get24hTideCurve } from '../utils/tideCalculations';
@@ -51,7 +51,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
 
   // Generate clean WhatsApp message
   const generateWhatsAppText = () => {
-    let msg = `🌊 *BOLETIM INFORMATIVO DE MARÉS & BARRAS*\n`;
+    let msg = `🌊 *BOLETIM INFORMATIVO DE MARÉS*\n`;
     msg += `📍 *${port.fullName.toUpperCase()}*\n`;
     msg += `📅 *Data:* ${dateFormatted.toUpperCase()}\n`;
     msg += `🧭 *Posição:* ${port.coordinates.dmsLat} ${port.coordinates.dmsLng}\n`;
@@ -142,13 +142,13 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
             </div>
             <div>
               <span className="text-[11px] font-mono tracking-widest uppercase text-emerald-400 font-bold block">
-                INTERSAL • SALA DE OPERAÇÃO • COSTA BRANCA - RN
+                INTERSAL • SALA DE OPERAÇÃO
               </span>
               <h1 className="text-xl md:text-2xl font-black text-white tracking-tight uppercase">
-                INFORMATIVO DIÁRIO DE MARÉS & BARRAS
+                INFORMATIVO DIÁRIO DE MARÉS
               </h1>
               <p className="text-xs text-slate-400 font-mono mt-0.5">
-                {port.fullName} • Carta Náutica {port.chartNumber}
+                {port.chartNumber}
               </p>
             </div>
           </div>
@@ -290,18 +290,6 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
             </div>
           </div>
         )}
-
-        {/* Advisory & Pilotage Footer */}
-        <div className="p-4 bg-slate-900 rounded-xl border border-cyan-900/40 text-xs space-y-2">
-          <span className="font-bold text-cyan-300 uppercase tracking-wide block">
-            4. RECOMENDAÇÕES NÁUTICAS E SEGURANÇA DA NAVEGAÇÃO
-          </span>
-          <ul className="list-disc list-inside space-y-1 text-slate-300">
-            <li>Embarcações com calado superior a 2.8m devem planejar a travessia da barra na janela de 1h30min antes a 1h30min após o pico da Preia-mar.</li>
-            <li>Atenção à forte correnteza de maré enchente/vazante no alinhamento da Ponta do Upanema e canal de acesso ao TERMISA.</li>
-            <li>Comunicação obrigatória via Rádio VHF Marítimo (Canal 16 / Canal 68) com a Praticagem e Estação de Controle.</li>
-          </ul>
-        </div>
       </div>
     </div>
   );

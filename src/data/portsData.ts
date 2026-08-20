@@ -3,8 +3,8 @@ import { PortConfig } from '../types/maritime';
 export const PORTS_DATA: Record<'areia_branca' | 'macau', PortConfig> = {
   areia_branca: {
     id: 'areia_branca',
-    name: 'Areia Branca (TERMISA)',
-    fullName: 'Porto de Areia Branca - Terminal Salineiro TERMISA & Barra do Rio Mossoró',
+    name: 'Areia Branca',
+    fullName: 'Porto de Areia Branca',
     state: 'RN',
     chartNumber: 'Carta DHN 703 / 701',
     dhnStation: 'DG6-63 (DHN 27 Componentes)',
@@ -20,7 +20,7 @@ export const PORTS_DATA: Record<'areia_branca' | 'macau', PortConfig> = {
     maxNormalDraft: 4.8, // Calado máximo operacional da barra interna
     timeOffsetMinutes: 0,
     heightMultiplier: 1.0,
-    description: 'Entrada da Barra de Areia Branca, foz do Rio Mossoró e Terminal Salineiro Ilha de Areia Branca (TERMISA).',
+    description: 'Entrada da Barra de Areia Branca e Porto de Areia Branca.',
     barCharacteristics: 'Barra sujeita a bancos de areia móveis na Ponta do Upanema. Marés semidiurnas com amplitudes de até 3.6m em sizígia.',
   },
   macau: {
