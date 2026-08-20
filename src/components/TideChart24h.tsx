@@ -54,8 +54,10 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
     refreshData();
 
     window.addEventListener('tide_annotations_updated', refreshData);
+    window.addEventListener('storage', refreshData);
     return () => {
       window.removeEventListener('tide_annotations_updated', refreshData);
+      window.removeEventListener('storage', refreshData);
     };
   }, []);
 
@@ -84,6 +86,17 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
     const updated = annotations.filter((a) => a.id !== id);
     setAnnotations(updated);
     saveAnnotationsToStorage(updated);
+  };
+
+  const handleClearAllAnnotations = () => {
+    if (!isOperator) {
+      setIsPinModalOpen(true);
+      return;
+    }
+    if (window.confirm('Deseja realmente excluir TODAS as marcações de barcaças? Esta ação não pode ser desfeita.')) {
+      setAnnotations([]);
+      saveAnnotationsToStorage([]);
+    }
   };
 
   const handleCopyShareLink = () => {
@@ -287,6 +300,17 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             <Plus className="w-3.5 h-3.5" />
             <span>Adicionar Barcaça / Evento</span>
           </button>
+
+          {isOperator && annotations.length > 0 && (
+            <button
+              onClick={handleClearAllAnnotations}
+              className="px-2.5 py-1 bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/80 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"
+              title="Excluir todas as marcações de barcaças do sistema"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Limpar Todas</span>
+            </button>
+          )}
 
           <button
             onClick={handlePrevDay}

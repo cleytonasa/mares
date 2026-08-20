@@ -1,7 +1,7 @@
 import { TideAnnotation } from '../types/maritime';
 import { createBargeDateTimeString, formatBargeDate } from '../utils/dateUtils';
 
-const STORAGE_KEY = 'tide_annotations_fleet_v5';
+const STORAGE_KEY = 'tide_annotations_fleet_v6';
 const OPERATOR_AUTH_KEY = 'tide_operator_authorized_v1';
 
 // Base64 encoding/decoding helper that handles UTF-8 safely
@@ -36,7 +36,7 @@ export const getSavedAnnotations = (): TideAnnotation[] => {
       const urlFrota = params.get('frota') || params.get('fleet');
       if (urlFrota) {
         const decoded = decodeAnnotationsFromUrl(urlFrota);
-        if (decoded && decoded.length > 0) {
+        if (decoded !== null && Array.isArray(decoded)) {
           // Persist to localStorage for future visits
           localStorage.setItem(STORAGE_KEY, JSON.stringify(decoded));
           return decoded;
@@ -46,18 +46,30 @@ export const getSavedAnnotations = (): TideAnnotation[] => {
 
     // 2. Check LocalStorage
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
+        // Return whatever is stored (including empty array [] when deleted)
         return parsed;
       }
     }
 
-    // 3. Fallback to default realistic seed
-    return getDefaultSeedAnnotations();
+    // 3. Clean fallback: return empty list so deleted or unconfigured fleet is never forced with ghost barges
+    return [];
   } catch (e) {
     console.error('Failed to parse annotations:', e);
-    return getDefaultSeedAnnotations();
+    return [];
+  }
+};
+
+export const clearAllAnnotationsFromStorage = (): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tide_annotations_updated', { detail: [] }));
+    }
+  } catch (e) {
+    console.error('Failed to clear annotations:', e);
   }
 };
 

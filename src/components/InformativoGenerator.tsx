@@ -22,6 +22,21 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [allAnnotations, setAllAnnotations] = useState(getSavedAnnotations());
+
+  // Listen to live annotation updates and storage changes
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      setAllAnnotations(getSavedAnnotations());
+    };
+    handleUpdate();
+    window.addEventListener('tide_annotations_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('tide_annotations_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth() + 1;
@@ -32,7 +47,6 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
   const hourlyCurve = get24hTideCurve(selectedDate, port, 24); // 24 hourly points
 
   // Load scheduled barge operations for the day and port
-  const allAnnotations = getSavedAnnotations();
   const dayAnnotations = allAnnotations
     .filter((a) => {
       if (a.portId !== port.id) return false;
