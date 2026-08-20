@@ -26,7 +26,6 @@ export const AnnotationModal: React.FC<AnnotationModalProps> = ({
   const [bargeStatus, setBargeStatus] = useState<BargeTripStatus>('Operação de Descarga');
   const [timeStr, setTimeStr] = useState<string>('12:00');
   const [dateStr, setDateStr] = useState<string>('');
-  const [estimatedDraft, setEstimatedDraft] = useState<string>('2.8');
   const [notes, setNotes] = useState<string>('');
   const [color, setColor] = useState<string>('#38bdf8');
 
@@ -41,7 +40,6 @@ export const AnnotationModal: React.FC<AnnotationModalProps> = ({
       const mins = String(dt.getMinutes()).padStart(2, '0');
       setTimeStr(`${hours}:${mins}`);
       setDateStr(dt.toISOString().split('T')[0]);
-      setEstimatedDraft(editingAnnotation.estimatedDraft ? String(editingAnnotation.estimatedDraft) : '2.8');
       setNotes(editingAnnotation.notes || '');
       setColor(editingAnnotation.color || '#38bdf8');
     } else {
@@ -52,7 +50,6 @@ export const AnnotationModal: React.FC<AnnotationModalProps> = ({
       setTitle('Dona Yolanda');
       setCategory('barcaca');
       setBargeStatus('Operação de Descarga');
-      setEstimatedDraft('2.8');
       setNotes('');
       setColor('#38bdf8');
     }
@@ -63,9 +60,6 @@ export const AnnotationModal: React.FC<AnnotationModalProps> = ({
   const handleSelectPreset = (preset: typeof BARGE_FLEET_PRESETS[0]) => {
     setTitle(preset.name);
     setCategory(preset.type as AnnotationCategory);
-    if (preset.defaultDraft > 0) {
-      setEstimatedDraft(String(preset.defaultDraft));
-    }
     setColor(preset.color);
   };
 
@@ -85,7 +79,6 @@ export const AnnotationModal: React.FC<AnnotationModalProps> = ({
         dateTime: targetDt.toISOString(),
         category,
         bargeStatus: category === 'barcaca' ? bargeStatus : undefined,
-        estimatedDraft: estimatedDraft ? parseFloat(estimatedDraft) : undefined,
         notes: notes.trim(),
         color,
       },
@@ -221,39 +214,21 @@ export const AnnotationModal: React.FC<AnnotationModalProps> = ({
             </div>
           </div>
 
-          {/* Draft & Color */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-slate-300 font-medium block mb-1">
-                Calado Previsto / Operacional (m)
-              </label>
-              <input
-                type="number"
-                step="0.05"
-                min="0"
-                max="15"
-                value={estimatedDraft}
-                onChange={(e) => setEstimatedDraft(e.target.value)}
-                placeholder="Ex: 2.80"
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-cyan-500 font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-slate-300 font-medium block mb-1">
-                Cor do Marcador no Gráfico
-              </label>
-              <div className="flex items-center gap-2 pt-1">
-                {['#38bdf8', '#06b6d4', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#f43f5e'].map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setColor(c)}
-                    className={`w-6 h-6 rounded-full transition ${color === c ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'}`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
+          {/* Color */}
+          <div>
+            <label className="text-xs text-slate-300 font-medium block mb-1">
+              Cor do Marcador no Gráfico
+            </label>
+            <div className="flex items-center gap-2.5 pt-1">
+              {['#38bdf8', '#06b6d4', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#f43f5e'].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-7 h-7 rounded-full transition ${color === c ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
             </div>
           </div>
 

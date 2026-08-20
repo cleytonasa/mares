@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, Info, Plus, Ship, Anchor, Lock, Unlock, Edit2, Trash2, Tag } from 'lucide-react';
 import { PortConfig, TideAnnotation } from '../types/maritime';
-import { get48hTideCurve, calculateCurrentTide } from '../utils/tideCalculations';
+import { get48hTideCurve, calculateCurrentTide, getNextHighTide } from '../utils/tideCalculations';
 import { getTidesForDay } from '../data/tideData2026';
 import { AnnotationModal } from './AnnotationModal';
 import { OperatorPinModal } from './OperatorPinModal';
@@ -806,17 +806,19 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
               </div>
             )}
 
-            <div className="mt-1 flex justify-between gap-2 text-[11px] font-mono">
-              <span className="text-slate-400">Maré Prevista:</span>
-              <span className="text-white font-bold">{hoveredAnnotation.height.toFixed(2)} m</span>
-            </div>
-
-            {hoveredAnnotation.annotation.estimatedDraft && (
-              <div className="flex justify-between gap-2 text-[11px] font-mono">
-                <span className="text-slate-400">Calado Estimado:</span>
-                <span className="text-cyan-300 font-bold">{hoveredAnnotation.annotation.estimatedDraft.toFixed(2)} m</span>
-              </div>
-            )}
+            {(() => {
+              const annDate = new Date(hoveredAnnotation.annotation.dateTime);
+              const nextHigh = getNextHighTide(annDate, port);
+              return (
+                <div className="mt-1.5 flex justify-between items-center gap-2 text-[11px] font-mono bg-slate-900/90 px-2 py-1 rounded-lg border border-slate-800">
+                  <span className="text-slate-400">Próxima Preamar:</span>
+                  <span className="text-emerald-300 font-bold flex items-center gap-1">
+                    <span>🔼 {nextHigh.timeStr}</span>
+                    <span className="text-cyan-300">({nextHigh.height.toFixed(2)}m)</span>
+                  </span>
+                </div>
+              );
+            })()}
 
             {hoveredAnnotation.annotation.notes && (
               <div className="mt-2 pt-1.5 border-t border-slate-800/80 text-[11px] text-slate-300 italic">
@@ -851,12 +853,14 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
         {windowAnnotations.length === 0 ? (
           <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-400">
             Nenhuma marcação de barcaça ou manobra registrada nesta janela de 48h.{' '}
-            <button
-              onClick={() => handleOpenAddModal()}
-              className="text-cyan-400 underline font-semibold hover:text-cyan-300 ml-1"
-            >
-              Clique para adicionar
-            </button>
+            {isOperator && (
+              <button
+                onClick={() => handleOpenAddModal()}
+                className="text-cyan-400 underline font-semibold hover:text-cyan-300 ml-1"
+              >
+                Clique para adicionar
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
@@ -865,6 +869,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
               const timeDisplay = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
               const dateDisplay = dt.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
               const itemColor = item.annotation.color || '#38bdf8';
+              const nextHigh = getNextHighTide(dt, port);
 
               return (
                 <div
@@ -879,16 +884,14 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                       </span>
                     </div>
 
-                    <div className="text-[11px] text-cyan-300 font-mono flex items-center gap-2">
+                    <div className="text-[11px] text-cyan-300 font-mono flex flex-wrap items-center gap-1.5">
                       <span>🕒 {timeDisplay}</span>
                       <span>•</span>
-                      <span>Maré: {item.height.toFixed(2)}m</span>
-                      {item.annotation.estimatedDraft && (
-                        <>
-                          <span>•</span>
-                          <span>Calado: {item.annotation.estimatedDraft}m</span>
-                        </>
-                      )}
+                      <span className="text-emerald-300 font-semibold flex items-center gap-1">
+                        <span>Preamar:</span>
+                        <span>🔼 {nextHigh.timeStr}</span>
+                        <span>({nextHigh.height.toFixed(2)}m)</span>
+                      </span>
                     </div>
 
                     {item.annotation.bargeStatus && (
@@ -941,17 +944,6 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             })}
           </div>
         )}
-      </div>
-
-      {/* Bottom Hint */}
-      <div className="mt-2 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800/80 pt-3">
-        <span className="flex items-center gap-1.5">
-          <Info className="w-3.5 h-3.5 text-cyan-400" />
-          Passe o mouse sobre os barcos para inspecionar maré, calado e faina.
-        </span>
-        <span className="font-mono text-[11px] text-slate-500">
-          DHN Carta 703 • Frota de Barcaças & Controle Operacional
-        </span>
       </div>
 
       {/* Annotation Creation / Edit Modal */}

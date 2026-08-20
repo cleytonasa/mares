@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FileText, Copy, Check, Printer, Waves, Wind, Ship } from 'lucide-react';
 import { PortConfig, WeatherData } from '../types/maritime';
 import { getTidesForDay } from '../data/tideData2026';
-import { calculateCurrentTide, get24hTideCurve } from '../utils/tideCalculations';
+import { calculateCurrentTide, get24hTideCurve, getNextHighTide } from '../utils/tideCalculations';
 import { getSavedAnnotations } from '../services/annotationService';
 import { IntersalLogo } from './IntersalLogo';
 
@@ -84,7 +84,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
       dayAnnotations.forEach((ann) => {
         const dt = new Date(ann.dateTime);
         const timeStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const tide = calculateCurrentTide(dt, port);
+        const nextHigh = getNextHighTide(dt, port);
         const icon = ann.category === 'barcaca' ? '⛴️' : ann.category === 'navio' ? '🚢' : '⚓';
         const statusEmoji = ann.bargeStatus === 'Finalizada' ? '🟢' : ann.bargeStatus === 'Operação de Descarga' ? '🟣' : '🔴';
 
@@ -92,7 +92,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
         if (ann.bargeStatus) {
           msg += `  - Status: ${statusEmoji} *${ann.bargeStatus}*\n`;
         }
-        msg += `  - Maré estimada: *${tide.currentHeight.toFixed(2)} m* | Calado: *${ann.estimatedDraft ? `${ann.estimatedDraft} m` : '-'}*\n`;
+        msg += `  - Próxima Preamar: *🔼 ${nextHigh.timeStr} (${nextHigh.height.toFixed(2)} m)*\n`;
         if (ann.notes && ann.notes.trim()) {
           msg += `  - Obs: _${ann.notes.trim()}_\n`;
         }
@@ -265,10 +265,9 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
                 <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
                   <tr>
                     <th className="p-2.5">Embarcação</th>
-                    <th className="p-2.5">Horário (BRT)</th>
+                    <th className="p-2.5">Horário da Manobra</th>
                     <th className="p-2.5">Status Operacional</th>
-                    <th className="p-2.5">Maré Prevista</th>
-                    <th className="p-2.5">Calado</th>
+                    <th className="p-2.5">Próxima Preamar</th>
                     <th className="p-2.5">Observações / VHF</th>
                   </tr>
                 </thead>
@@ -276,7 +275,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
                   {dayAnnotations.map((ann) => {
                     const dt = new Date(ann.dateTime);
                     const timeStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                    const tide = calculateCurrentTide(dt, port);
+                    const nextHigh = getNextHighTide(dt, port);
                     const itemColor = ann.color || '#38bdf8';
 
                     return (
@@ -285,7 +284,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
                           <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: itemColor }} />
                           <span>{ann.category === 'barcaca' ? '⛴️' : '🚢'} {ann.title}</span>
                         </td>
-                        <td className="p-2.5 text-cyan-300 font-bold">{timeStr}</td>
+                        <td className="p-2.5 text-cyan-300 font-bold">{timeStr} BRT</td>
                         <td className="p-2.5">
                           {ann.bargeStatus ? (
                             <span
@@ -306,8 +305,9 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
                             <span className="text-slate-400">-</span>
                           )}
                         </td>
-                        <td className="p-2.5 text-emerald-300 font-bold">{tide.currentHeight.toFixed(2)} m</td>
-                        <td className="p-2.5 text-amber-300 font-bold">{ann.estimatedDraft ? `${ann.estimatedDraft} m` : '-'}</td>
+                        <td className="p-2.5 text-emerald-300 font-bold font-mono">
+                          🔼 Preamar {nextHigh.timeStr} ({nextHigh.height.toFixed(2)} m)
+                        </td>
                         <td className="p-2.5 text-slate-300 italic text-[11px]">
                           {ann.notes && ann.notes.trim() ? ann.notes : '-'}
                         </td>

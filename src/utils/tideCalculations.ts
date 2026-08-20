@@ -148,6 +148,22 @@ export function calculateCurrentTide(targetDate: Date, port: PortConfig): Curren
   };
 }
 
+// Find the next high tide (Preamar) strictly after or at targetDate
+export function getNextHighTide(targetDate: Date, port: PortConfig): AbsoluteTidePoint {
+  const events = getChronologicalEvents(targetDate, port);
+  const nowTs = targetDate.getTime();
+
+  // Find first 'high' tide at or after targetDate
+  const nextHigh = events.find((evt) => evt.type === 'high' && evt.timestamp >= nowTs);
+  if (nextHigh) {
+    return nextHigh;
+  }
+
+  // Fallback: search last high tide in list
+  const fallback = events.filter((evt) => evt.type === 'high').pop();
+  return fallback || events[0];
+}
+
 // Generate 24-hour continuous curve points for chart rendering
 export function get24hTideCurve(referenceDate: Date, port: PortConfig, pointsCount = 48) {
   const startOfDay = new Date(referenceDate);
