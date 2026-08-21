@@ -93,27 +93,41 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
     });
   }, [selectedMonth, selectedShipper, selectedTraffic, selectedStatus, searchQuery, sortField, sortAsc]);
 
-  // Aggregated totals of filtered selection
+  // Concluded and Planned vessels partition
+  const concludedFilteredVessels = useMemo(() => {
+    return filteredVessels.filter((v) => v.status === 'Concluído');
+  }, [filteredVessels]);
+
+  const plannedFilteredVessels = useMemo(() => {
+    return filteredVessels.filter((v) => v.status === 'Previsto');
+  }, [filteredVessels]);
+
+  // Aggregated totals of filtered selection (Volumes and executed quantities strictly from Concluído)
   const filteredTotals = useMemo(() => {
-    const totalVolume = filteredVessels.reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const scTotal = filteredVessels.reduce((acc, v) => acc + v.scVolumeTons, 0);
-    const sqTotal = filteredVessels.reduce((acc, v) => acc + v.sqVolumeTons, 0);
-    const salinorVolume = filteredVessels.filter((v) => v.shipper === 'SALINOR').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const sdbVolume = filteredVessels.filter((v) => v.shipper === 'SDB').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const expVolume = filteredVessels.filter((v) => v.trafficType === 'EXP').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const cbtVolume = filteredVessels.filter((v) => v.trafficType === 'CBT').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    // If user explicitly chooses 'Previsto', calculate for planned; otherwise calculate strictly for concluded vessels
+    const targetList = selectedStatus === 'Previsto' ? plannedFilteredVessels : (selectedStatus === 'Concluído' ? filteredVessels : concludedFilteredVessels);
+
+    const totalVolume = targetList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const scTotal = targetList.reduce((acc, v) => acc + v.scVolumeTons, 0);
+    const sqTotal = targetList.reduce((acc, v) => acc + v.sqVolumeTons, 0);
+    const salinorVolume = targetList.filter((v) => v.shipper === 'SALINOR').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const sdbVolume = targetList.filter((v) => v.shipper === 'SDB').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const expVolume = targetList.filter((v) => v.trafficType === 'EXP').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const cbtVolume = targetList.filter((v) => v.trafficType === 'CBT').reduce((acc, v) => acc + v.totalVolumeTons, 0);
 
     return {
       totalVolume,
       scTotal,
       sqTotal,
-      vesselCount: filteredVessels.length,
+      vesselCount: targetList.length,
       salinorVolume,
       sdbVolume,
       expVolume,
       cbtVolume,
+      concludedCount: concludedFilteredVessels.length,
+      plannedCount: plannedFilteredVessels.length,
     };
-  }, [filteredVessels]);
+  }, [filteredVessels, concludedFilteredVessels, plannedFilteredVessels, selectedStatus]);
 
   // Copy formatted WhatsApp report
   const handleCopyWhatsAppReport = () => {
@@ -121,20 +135,25 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
     
     let text = `⚓ *INTERSAL - RELATÓRIO DE EMBARQUE DE SAL (TERMISA)*\n`;
     text += `📅 *Período:* ${monthLabel}\n`;
-    text += `🚢 *Total de Navios:* ${filteredTotals.vesselCount}\n`;
-    text += `📦 *Volume Total:* ${filteredTotals.totalVolume.toLocaleString('pt-BR')} Tons\n`;
-    text += `  • Sal Comum (SC): ${filteredTotals.scTotal.toLocaleString('pt-BR')} Tons (${((filteredTotals.scTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)\n`;
-    text += `  • Sal Químico (SQ): ${filteredTotals.sqTotal.toLocaleString('pt-BR')} Tons (${((filteredTotals.sqTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)\n\n`;
+    text += `🚢 *Navios Concluídos:* ${filteredTotals.vesselCount}\n`;
+    text += `📦 *Volume Total Concluído:* ${filteredTotals.totalVolume.toLocaleString('pt-BR')}\n`;
+    text += `  • Sal Comum (SC): ${filteredTotals.scTotal.toLocaleString('pt-BR')} (${((filteredTotals.scTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)\n`;
+    text += `  • Sal Químico (SQ): ${filteredTotals.sqTotal.toLocaleString('pt-BR')} (${((filteredTotals.sqTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)\n\n`;
     text += `🏢 *Por Salineira:*\n`;
-    text += `  • SALINOR: ${filteredTotals.salinorVolume.toLocaleString('pt-BR')} Tons\n`;
-    text += `  • SDB: ${filteredTotals.sdbVolume.toLocaleString('pt-BR')} Tons\n\n`;
+    text += `  • SALINOR: ${filteredTotals.salinorVolume.toLocaleString('pt-BR')}\n`;
+    text += `  • SDB: ${filteredTotals.sdbVolume.toLocaleString('pt-BR')}\n\n`;
     text += `🌐 *Por Tráfego:*\n`;
-    text += `  • Exportação (EXP): ${filteredTotals.expVolume.toLocaleString('pt-BR')} Tons\n`;
-    text += `  • Cabotagem (CBT): ${filteredTotals.cbtVolume.toLocaleString('pt-BR')} Tons\n\n`;
-    text += `📋 *Line-up de Navios:*\n`;
+    text += `  • Exportação (EXP): ${filteredTotals.expVolume.toLocaleString('pt-BR')}\n`;
+    text += `  • Cabotagem (CBT): ${filteredTotals.cbtVolume.toLocaleString('pt-BR')}\n\n`;
+    text += `📋 *Line-up de Navios Concluídos:*\n`;
 
-    filteredVessels.forEach((v, idx) => {
-      text += `${idx + 1}. *${v.vesselName}* (${v.shipper} - ${v.trafficType}) | ${v.totalVolumeTons.toLocaleString('pt-BR')} t [SC: ${v.scVolumeTons.toLocaleString('pt-BR')} | SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}] • ETB: ${v.etb.split(' ')[0]} • Status: ${v.status}\n`;
+    (selectedStatus === 'Previsto' ? plannedFilteredVessels : concludedFilteredVessels).forEach((v, idx) => {
+      const typeBreakdown = v.scVolumeTons > 0 && v.sqVolumeTons > 0
+        ? ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')} | SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
+        : v.sqVolumeTons > 0
+        ? ` [SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
+        : ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')}]`;
+      text += `${idx + 1}. *${v.vesselName}* (${v.visitCode} • ${v.dwt.toLocaleString('pt-BR')} DWT • ${v.shipper} - ${v.trafficType}) | ${v.totalVolumeTons.toLocaleString('pt-BR')}${typeBreakdown} • ETB: ${v.etb.split(' ')[0]} • Status: ${v.status}\n`;
     });
 
     text += `\n_Fonte: Sistema de Monitoramento INTERSAL / DHN 2026_`;
@@ -284,14 +303,13 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                           <span className="text-slate-300 font-semibold">{v.shipper}</span>
                           <span>({v.trafficType})</span>
                           <span>•</span>
-                          <span className="text-slate-400">{v.loaMeters.toFixed(1)}m LOA</span>
+                          <span className="text-slate-400">{v.loaMeters.toFixed(1)}m LOA • {v.dwt.toLocaleString('pt-BR')} DWT</span>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0">
                         <span className="text-xs sm:text-sm font-bold text-white font-mono block">
-                          {v.totalVolumeTons.toLocaleString('pt-BR')}{' '}
-                          <span className="text-[10px] text-slate-400 font-normal">t</span>
+                          {v.totalVolumeTons.toLocaleString('pt-BR')}
                         </span>
                         <span className="text-[9px] text-slate-400 block">
                           {v.sqVolumeTons > 0 && v.scVolumeTons > 0
@@ -370,14 +388,13 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                           <span className="text-slate-300 font-semibold">{v.shipper}</span>
                           <span>({v.trafficType})</span>
                           <span>•</span>
-                          <span className="text-slate-400">{v.loaMeters.toFixed(1)}m LOA</span>
+                          <span className="text-slate-400">{v.loaMeters.toFixed(1)}m LOA • {v.dwt.toLocaleString('pt-BR')} DWT</span>
                         </div>
                       </div>
 
                       <div className="text-right shrink-0">
                         <span className="text-xs sm:text-sm font-bold text-white font-mono block">
-                          {v.totalVolumeTons.toLocaleString('pt-BR')}{' '}
-                          <span className="text-[10px] text-slate-400 font-normal">t</span>
+                          {v.totalVolumeTons.toLocaleString('pt-BR')}
                         </span>
                         <span className="text-[9px] text-slate-400 block">
                           {v.sqVolumeTons > 0 && v.scVolumeTons > 0
@@ -421,11 +438,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
       {/* 4 Main Executive Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        {/* Metric 1: Total Volume */}
+        {/* Metric 1: Total Volume Concluded */}
         <div className="p-3.5 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-bold text-cyan-400 uppercase tracking-wide">
-              Volume Total
+              {selectedStatus === 'Previsto' ? 'Volume Previsto' : 'Volume Concluído'}
             </span>
             <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400">
               <TrendingUp className="w-4 h-4" />
@@ -433,10 +450,10 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           </div>
           <div className="mt-2 sm:mt-3">
             <div className="text-xl sm:text-3xl font-black text-white tracking-tight">
-              {filteredTotals.totalVolume.toLocaleString('pt-BR')} <span className="text-xs sm:text-sm font-semibold text-slate-400">t</span>
+              {filteredTotals.totalVolume.toLocaleString('pt-BR')}
             </div>
             <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
-              <span>Média: {(filteredTotals.totalVolume / (selectedMonth === 'ALL' ? 8 : 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} t/mês</span>
+              <span>Média: {(filteredTotals.totalVolume / (selectedMonth === 'ALL' ? 8 : 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} / mês</span>
             </div>
           </div>
           <div className="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
@@ -461,7 +478,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
             <div>
               <span className="text-[10px] text-slate-400 uppercase font-semibold">Sal Comum (SC)</span>
               <div className="text-sm sm:text-lg font-bold text-white leading-tight">
-                {filteredTotals.scTotal.toLocaleString('pt-BR')} t
+                {filteredTotals.scTotal.toLocaleString('pt-BR')}
               </div>
               <span className="text-[10px] text-cyan-400 font-medium">
                 {((filteredTotals.scTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%
@@ -470,7 +487,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
             <div>
               <span className="text-[10px] text-slate-400 uppercase font-semibold">Sal Químico (SQ)</span>
               <div className="text-sm sm:text-lg font-bold text-white leading-tight">
-                {filteredTotals.sqTotal.toLocaleString('pt-BR')} t
+                {filteredTotals.sqTotal.toLocaleString('pt-BR')}
               </div>
               <span className="text-[10px] text-emerald-400 font-medium">
                 {((filteredTotals.sqTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%
@@ -491,11 +508,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           </div>
         </div>
 
-        {/* Metric 3: Frota / Navios */}
+        {/* Metric 3: Frota / Navios Concluídos */}
         <div className="p-3.5 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-bold text-indigo-400 uppercase tracking-wide">
-              Navios Atendidos
+              {selectedStatus === 'Previsto' ? 'Navios Previstos' : 'Navios Concluídos'}
             </span>
             <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
               <Ship className="w-4 h-4" />
@@ -506,16 +523,16 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
               {filteredTotals.vesselCount} <span className="text-xs sm:text-sm font-semibold text-slate-400">navios</span>
             </div>
             <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
-              <span>Média por navio: {(filteredTotals.totalVolume / (filteredTotals.vesselCount || 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} t</span>
+              <span>Média por navio: {(filteredTotals.totalVolume / (filteredTotals.vesselCount || 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2">
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
-              <CheckCircle2 className="w-3 h-3" /> {filteredVessels.filter((v) => v.status === 'Concluído').length} Concluídos
+              <CheckCircle2 className="w-3 h-3" /> {filteredTotals.concludedCount} Concluídos
             </span>
-            {filteredVessels.some((v) => v.status === 'Previsto') && (
+            {filteredTotals.plannedCount > 0 && (
               <span className="flex items-center gap-1 text-amber-400 font-medium">
-                <Clock className="w-3 h-3" /> {filteredVessels.filter((v) => v.status === 'Previsto').length} Previstos
+                <Clock className="w-3 h-3" /> {filteredTotals.plannedCount} Previstos
               </span>
             )}
           </div>
@@ -535,7 +552,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
             <div>
               <span className="text-[10px] text-slate-400 block font-semibold">SALINOR</span>
               <span className="font-bold text-white text-sm">
-                {(filteredTotals.salinorVolume / 1000).toFixed(1)}k <span className="text-[10px] text-slate-400 font-normal">t</span>
+                {(filteredTotals.salinorVolume / 1000).toFixed(1)}k
               </span>
               <span className="text-[10px] text-cyan-400 block">
                 {((filteredTotals.salinorVolume / (filteredTotals.totalVolume || 1)) * 100).toFixed(0)}%
@@ -544,7 +561,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
             <div>
               <span className="text-[10px] text-slate-400 block font-semibold">SDB (Diamante)</span>
               <span className="font-bold text-white text-sm">
-                {(filteredTotals.sdbVolume / 1000).toFixed(1)}k <span className="text-[10px] text-slate-400 font-normal">t</span>
+                {(filteredTotals.sdbVolume / 1000).toFixed(1)}k
               </span>
               <span className="text-[10px] text-amber-400 block">
                 {((filteredTotals.sdbVolume / (filteredTotals.totalVolume || 1)) * 100).toFixed(0)}%
@@ -901,7 +918,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Pico de movimentação anual: <strong className="text-white">Maio/2026 (214.650 t)</strong> • Total acumulado: <strong className="text-cyan-400">1.216.369 t</strong>
+              Pico de movimentação anual: <strong className="text-white">Maio/2026 (214.650 t)</strong> • Total acumulado concluído: <strong className="text-cyan-400">1.135.689 t</strong> (32 navios)
             </span>
             {selectedMonth !== 'ALL' && (
               <button
@@ -927,7 +944,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                 <div className="flex justify-between text-xs font-bold mb-1">
                   <span className="text-cyan-300">SALINOR</span>
                   <span className="text-white">
-                    {filteredTotals.salinorVolume.toLocaleString('pt-BR')} t ({((filteredTotals.salinorVolume / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)
+                    {filteredTotals.salinorVolume.toLocaleString('pt-BR')} ({((filteredTotals.salinorVolume / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)
                   </span>
                 </div>
                 <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
@@ -943,7 +960,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                 <div className="flex justify-between text-xs font-bold mb-1">
                   <span className="text-amber-400">SDB (Diamante Branco)</span>
                   <span className="text-white">
-                    {filteredTotals.sdbVolume.toLocaleString('pt-BR')} t ({((filteredTotals.sdbVolume / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)
+                    {filteredTotals.sdbVolume.toLocaleString('pt-BR')} ({((filteredTotals.sdbVolume / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)
                   </span>
                 </div>
                 <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
@@ -976,7 +993,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                   <span className="px-1.5 py-0.2 rounded bg-indigo-900/60 text-[10px]">EXP</span>
                 </div>
                 <div className="text-base font-bold text-white mt-1">
-                  {filteredTotals.expVolume.toLocaleString('pt-BR')} <span className="text-[10px] text-slate-400">t</span>
+                  {filteredTotals.expVolume.toLocaleString('pt-BR')}
                 </div>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
                   {((filteredTotals.expVolume / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}% do volume
@@ -996,7 +1013,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                   <span className="px-1.5 py-0.2 rounded bg-cyan-900/60 text-[10px]">CBT</span>
                 </div>
                 <div className="text-base font-bold text-white mt-1">
-                  {filteredTotals.cbtVolume.toLocaleString('pt-BR')} <span className="text-[10px] text-slate-400">t</span>
+                  {filteredTotals.cbtVolume.toLocaleString('pt-BR')}
                 </div>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
                   {((filteredTotals.cbtVolume / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}% do volume
@@ -1042,6 +1059,17 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
           {/* Search Input & Secondary Filters */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Status Filter */}
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value as any)}
+              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
+            >
+              <option value="ALL">Status: Todos (34)</option>
+              <option value="Concluído">Status: Concluídos (32)</option>
+              <option value="Previsto">Status: Previstos (2)</option>
+            </select>
+
             {/* Shipper Filter */}
             <select
               value={selectedShipper}
@@ -1253,7 +1281,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
                     {/* Total Volume */}
                     <td className="py-3 px-3 sm:px-4 text-right font-mono font-bold text-white text-xs whitespace-nowrap">
-                      {v.totalVolumeTons.toLocaleString('pt-BR')} <span className="text-[10px] text-slate-500">t</span>
+                      {v.totalVolumeTons.toLocaleString('pt-BR')}
                     </td>
 
                     {/* Traffic Badge */}
@@ -1292,13 +1320,13 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                   TOTAL DO FILTRO ({filteredTotals.vesselCount} navios)
                 </td>
                 <td className="py-3 px-3 text-right font-mono text-cyan-300">
-                  {filteredTotals.scTotal.toLocaleString('pt-BR')} t
+                  {filteredTotals.scTotal.toLocaleString('pt-BR')}
                 </td>
                 <td className="py-3 px-3 text-right font-mono text-emerald-400">
-                  {filteredTotals.sqTotal.toLocaleString('pt-BR')} t
+                  {filteredTotals.sqTotal.toLocaleString('pt-BR')}
                 </td>
                 <td className="py-3 px-3 sm:px-4 text-right font-mono text-white text-sm">
-                  {filteredTotals.totalVolume.toLocaleString('pt-BR')} t
+                  {filteredTotals.totalVolume.toLocaleString('pt-BR')}
                 </td>
                 <td colSpan={2} className="py-3 px-3 text-center text-slate-400 text-[11px]">
                   SALINOR: {(filteredTotals.salinorVolume / 1000).toFixed(0)}k | SDB: {(filteredTotals.sdbVolume / 1000).toFixed(0)}k

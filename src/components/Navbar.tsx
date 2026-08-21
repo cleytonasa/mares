@@ -133,7 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 id="nav-tab-shipments"
                 onClick={() => onChangeTab('shipments')}
-                title="Navios Previstos & Line-Up INTERSAL"
+                title="Line-Up de Navios INTERSAL"
                 className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 whitespace-nowrap ${
                   activeTab === 'shipments'
                     ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/40 shadow-sm'
@@ -141,7 +141,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`}
               >
                 <Ship className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-cyan-400" />
-                <span>Navios Previstos</span>
+                <span>Line-Up</span>
               </button>
 
               <button

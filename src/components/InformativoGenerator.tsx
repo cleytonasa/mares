@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { FileText, Copy, Check, Printer, Waves, Wind } from 'lucide-react';
+import { FileText, Copy, Check, Waves, Wind, Ship, CheckCircle2 } from 'lucide-react';
 import { PortConfig, WeatherData } from '../types/maritime';
 import { getTidesForDay } from '../data/tideData2026';
 import { calculateCurrentTide, get24hTideCurve } from '../utils/tideCalculations';
 import { IntersalLogo } from './IntersalLogo';
+import { SALT_SHIPMENTS_2026 } from '../data/saltShipmentsData';
 
 interface InformativoGeneratorProps {
   port: PortConfig;
@@ -33,6 +34,14 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     month: 'long',
     year: 'numeric',
   });
+
+  const monthName = selectedDate.toLocaleDateString('pt-BR', { month: 'long' });
+
+  // Navios finalizados no mês selecionado
+  const concludedVesselsInMonth = SALT_SHIPMENTS_2026.filter(
+    (v) => v.month === month && v.status === 'Concluído'
+  );
+  const monthTotalTons = concludedVesselsInMonth.reduce((acc, v) => acc + v.totalVolumeTons, 0);
 
   const getMoonText = () => {
     switch (dayTides.moonPhase) {
@@ -72,6 +81,19 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
       msg += `• Alvorada Náutica: *${weather.nauticalDawn}* | Crepúsculo: *${weather.nauticalDusk}*\n`;
     }
 
+    if (concludedVesselsInMonth.length > 0) {
+      msg += `\n🚢 *NAVIOS FINALIZADOS NO MÊS (${monthName.toUpperCase()}/${year}):*\n`;
+      concludedVesselsInMonth.forEach((v) => {
+        const typeBreakdown = v.scVolumeTons > 0 && v.sqVolumeTons > 0
+          ? ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')} | SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
+          : v.sqVolumeTons > 0
+          ? ` [SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
+          : ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')}]`;
+        msg += `• *${v.vesselName}* (${v.visitCode} • ${v.dwt.toLocaleString('pt-BR')} DWT) • ${v.totalVolumeTons.toLocaleString('pt-BR')}${typeBreakdown} (${v.shipper} - ${v.trafficLabel})\n`;
+      });
+      msg += `*Total Carregado:* ${monthTotalTons.toLocaleString('pt-BR')} (${concludedVesselsInMonth.length} navios)\n`;
+    }
+
     msg += `\n⚓ *CONDIÇÃO DA BARRA & RECOMENDAÇÕES:*\n`;
     msg += `• Calado máximo seguro na maré cheia: *~${(port.criticalShallowDepth + 3.2).toFixed(1)} m*\n`;
     msg += `• Atenção ao banco arenoso da Ponta do Upanema / Foz do Rio Açu.\n`;
@@ -88,10 +110,6 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     setTimeout(() => setCopied(false), 3000);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <div className="space-y-5 text-slate-100">
       {/* Top Action Bar */}
@@ -101,15 +119,12 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
             <FileText className="w-5 h-5 text-cyan-400" />
             Boletim Informativo de Marés e Condições Portuárias
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5 font-mono">
-            Documento pronto para despacho marítimo, práticos e rádio VHF
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopyWhatsApp}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-md ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-md ${
               copied
                 ? 'bg-emerald-600 text-white'
                 : 'bg-emerald-700 hover:bg-emerald-600 text-white shadow-emerald-700/30'
@@ -117,14 +132,6 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copied ? 'Copiado para WhatsApp!' : 'Copiar Texto p/ WhatsApp'}
-          </button>
-
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white shadow-md shadow-cyan-600/30 transition"
-          >
-            <Printer className="w-4 h-4" />
-            Imprimir / Salvar PDF
           </button>
         </div>
       </div>
@@ -290,6 +297,75 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
             </div>
           </div>
         )}
+
+        {/* Concluded Vessels in Month Section */}
+        <div>
+          <div className="flex items-center justify-between mb-2.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5 font-mono">
+              <Ship className="w-4 h-4 text-emerald-400" />
+              4. NAVIOS FINALIZADOS NO MÊS ({monthName.toUpperCase()} / {year})
+            </h3>
+            <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/50 px-2.5 py-0.5 rounded-md">
+              {concludedVesselsInMonth.length} navio(s) • {monthTotalTons.toLocaleString('pt-BR')}
+            </span>
+          </div>
+
+          {concludedVesselsInMonth.length > 0 ? (
+            <div className="overflow-x-auto rounded-xl border border-slate-800">
+              <table className="w-full text-xs font-mono text-left">
+                <thead className="bg-slate-900 text-slate-400 border-b border-slate-800 text-[11px]">
+                  <tr>
+                    <th className="p-2.5">Navio / Viagem</th>
+                    <th className="p-2.5">Período Operado</th>
+                    <th className="p-2.5">Volume</th>
+                    <th className="p-2.5">Embarcador / Tráfego</th>
+                    <th className="p-2.5 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
+                  {concludedVesselsInMonth.map((vessel) => (
+                    <tr key={vessel.id} className="hover:bg-slate-900/40">
+                      <td className="p-2.5">
+                        <span className="font-bold text-white block">{vessel.vesselName}</span>
+                        <span className="text-[10px] text-slate-400">
+                          {vessel.visitCode} • LOA {vessel.loaMeters}m • {vessel.dwt.toLocaleString('pt-BR')} DWT
+                        </span>
+                      </td>
+                      <td className="p-2.5 text-slate-300">
+                        <span className="block text-[11px]">{vessel.etb}</span>
+                        <span className="text-[10px] text-slate-400">até {vessel.etd}</span>
+                      </td>
+                      <td className="p-2.5">
+                        <span className="font-bold text-emerald-400 block">{vessel.totalVolumeTons.toLocaleString('pt-BR')}</span>
+                        <span className="text-[10px] text-slate-400">
+                          {vessel.scVolumeTons > 0 && vessel.sqVolumeTons > 0
+                            ? `SC: ${vessel.scVolumeTons.toLocaleString('pt-BR')} | SQ: ${vessel.sqVolumeTons.toLocaleString('pt-BR')}`
+                            : vessel.sqVolumeTons > 0
+                            ? `SQ: ${vessel.sqVolumeTons.toLocaleString('pt-BR')}`
+                            : `SC: ${vessel.scVolumeTons.toLocaleString('pt-BR')}`}
+                        </span>
+                      </td>
+                      <td className="p-2.5">
+                        <span className="text-cyan-300 font-semibold">{vessel.shipper}</span>
+                        <span className="text-slate-400 text-[10px] block">{vessel.trafficLabel}</span>
+                      </td>
+                      <td className="p-2.5 text-right">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          Concluído
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-center text-xs font-mono text-slate-400">
+              Nenhum navio finalizado registrado para este mês.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
