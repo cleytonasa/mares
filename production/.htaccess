@@ -1,35 +1,57 @@
 # 1. Permissões de Acesso e Índices
 Options -Indexes +FollowSymLinks
-DirectoryIndex index.html index.php
+DirectoryIndex index.html
 
 <IfModule mod_authz_core.c>
   Require all granted
 </IfModule>
 
+# 2. Tipos MIME Corretos
+<IfModule mod_mime.c>
+  AddType application/javascript .js .mjs
+  AddType text/javascript .js
+  AddType text/css .css
+  AddType application/json .json
+  AddType application/manifest+json .webmanifest
+  AddType image/svg+xml .svg .svgz
+  AddType image/x-icon .ico
+  AddType image/png .png
+  AddType font/woff .woff
+  AddType font/woff2 .woff2
+</IfModule>
+
+# 3. Regras de Roteamento SPA
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Se o arquivo ou pasta requisitado existir fisicamente (js, css, imagens, svg), sirva direto
+  # Não reescrever requisições para arquivos ou pastas físicas existentes
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Fallback de SPA: Redireciona qualquer rota para o index.html
+  # Se for um asset com extensão que não existe, retorne 404 em vez de index.html
+  RewriteCond %{REQUEST_URI} \.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|webmanifest|json|woff|woff2)$ [NC]
+  RewriteRule ^ - [R=404,L]
+
+  # Fallback de SPA apenas para páginas de navegação
   RewriteRule ^ index.html [L]
 </IfModule>
 
-# Compressão GZIP / Deflate para carregamento rápido no HostGator
+# 4. Compressão GZIP / Deflate
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json application/xml image/svg+xml
 </IfModule>
 
-# Configuração de Cache
+# 5. Controle de Cache e Headers
 <IfModule mod_headers.c>
-  # Forçar index.html e manifest a nunca ficarem presos em cache (atualização imediata a cada deploy)
   <FilesMatch "\.(html|htm|json|webmanifest)$">
     Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
     Header set Pragma "no-cache"
     Header set Expires "0"
+  </FilesMatch>
+
+  <FilesMatch "\.(js|mjs)$">
+    Header set Content-Type "application/javascript; charset=utf-8"
   </FilesMatch>
 </IfModule>
 
@@ -38,15 +60,8 @@ DirectoryIndex index.html index.php
   ExpiresByType text/html "access plus 0 seconds"
   ExpiresByType application/json "access plus 0 seconds"
   ExpiresByType application/manifest+json "access plus 0 seconds"
-  ExpiresByType image/jpg "access plus 1 year"
-  ExpiresByType image/jpeg "access plus 1 year"
-  ExpiresByType image/gif "access plus 1 year"
-  ExpiresByType image/png "access plus 1 year"
-  ExpiresByType image/svg+xml "access plus 1 year"
   ExpiresByType text/css "access plus 1 month"
   ExpiresByType application/javascript "access plus 1 month"
   ExpiresByType text/javascript "access plus 1 month"
-  ExpiresByType application/font-woff "access plus 1 year"
-  ExpiresByType application/font-woff2 "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
 </IfModule>
-
