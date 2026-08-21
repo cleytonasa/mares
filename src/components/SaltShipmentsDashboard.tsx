@@ -136,7 +136,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
     let text = `⚓ *INTERSAL - RELATÓRIO DE EMBARQUE DE SAL (TERMISA)*\n`;
     text += `📅 *Período:* ${monthLabel}\n`;
     text += `🚢 *Navios Concluídos:* ${filteredTotals.vesselCount}\n`;
-    text += `📦 *Volume Total Concluído:* ${filteredTotals.totalVolume.toLocaleString('pt-BR')}\n`;
+    text += `📦 *Total Embarcado:* ${filteredTotals.totalVolume.toLocaleString('pt-BR')}\n`;
     text += `  • Sal Comum (SC): ${filteredTotals.scTotal.toLocaleString('pt-BR')} (${((filteredTotals.scTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)\n`;
     text += `  • Sal Químico (SQ): ${filteredTotals.sqTotal.toLocaleString('pt-BR')} (${((filteredTotals.sqTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)\n\n`;
     text += `🏢 *Por Salineira:*\n`;
@@ -438,11 +438,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
       {/* 4 Main Executive Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
-        {/* Metric 1: Total Volume Concluded */}
+        {/* Metric 1: Total Volume Concluded (Total Embarcado) */}
         <div className="p-3.5 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-bold text-cyan-400 uppercase tracking-wide">
-              {selectedStatus === 'Previsto' ? 'Volume Previsto' : 'Volume Concluído'}
+              {selectedStatus === 'Previsto' ? 'Volume Previsto' : 'Total Embarcado'}
             </span>
             <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400">
               <TrendingUp className="w-4 h-4" />
@@ -918,7 +918,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Pico de movimentação anual: <strong className="text-white">Maio/2026 (214.650 t)</strong> • Total acumulado concluído: <strong className="text-cyan-400">1.135.689 t</strong> (32 navios)
+              Pico de movimentação anual: <strong className="text-white">Maio/2026 (214.650 t)</strong> • Total acumulado embarcado: <strong className="text-cyan-400">{OVERALL_TOTALS.totalTons.toLocaleString('pt-BR')} t</strong> ({OVERALL_TOTALS.concludedVessels} navios)
             </span>
             {selectedMonth !== 'ALL' && (
               <button
