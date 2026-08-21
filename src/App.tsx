@@ -11,7 +11,6 @@ import { PortConfig, WeatherData, AlertThresholds, CustomUserLocation } from './
 import { INITIAL_USER_LOCATION } from './data/vesselTrafficData';
 import { calculateCurrentTide } from './utils/tideCalculations';
 import { fetchPortWeather } from './services/weatherService';
-import { syncAnnotationsFromServer } from './services/annotationService';
 import { AlertTriangle, MapPin, Compass, Table, Crosshair, CloudSun, Map } from 'lucide-react';
 
 const DEFAULT_THRESHOLDS: AlertThresholds = {
@@ -50,26 +49,6 @@ export default function App() {
       setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
-
-  // Central server synchronization for fleet/barge operations
-  useEffect(() => {
-    syncAnnotationsFromServer();
-    const interval = setInterval(() => {
-      syncAnnotationsFromServer();
-    }, 8000);
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        syncAnnotationsFromServer();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
   }, []);
 
   // Fetch weather when port or user location changes

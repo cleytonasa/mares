@@ -4,9 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && mkdir -p assets production/assets && cp -rf dist/assets/* assets/ 2>/dev/null || true && cp -rf dist/* production/ 2>/dev/null || true && cp dist/assets/* production/assets/ 2>/dev/null || true && cp public/logo.svg assets/logo.svg 2>/dev/null || true && cp public/logo.svg production/logo.svg 2>/dev/null || true",
-    "start": "node dist/server.cjs",
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "vite build && mkdir -p assets production/assets && cp -rf dist/assets/* assets/ && cp -rf dist/* production/ && cp dist/assets/* production/assets/ && cp dist/.htaccess production/.htaccess && cp public/logo.svg assets/logo.svg && cp public/logo.svg production/logo.svg",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"

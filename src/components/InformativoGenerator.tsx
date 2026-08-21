@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { FileText, Copy, Check, Printer, Waves, Wind, Ship, Share2 } from 'lucide-react';
+import { FileText, Copy, Check, Printer, Waves, Wind } from 'lucide-react';
 import { PortConfig, WeatherData } from '../types/maritime';
 import { getTidesForDay } from '../data/tideData2026';
-import { calculateCurrentTide, get24hTideCurve, getNextHighTide } from '../utils/tideCalculations';
-import { getSavedAnnotations, generateShareableFleetUrl } from '../services/annotationService';
-import { formatBargeTime, formatBargeDate, parseBargeDateTime } from '../utils/dateUtils';
+import { calculateCurrentTide, get24hTideCurve } from '../utils/tideCalculations';
 import { IntersalLogo } from './IntersalLogo';
 
 interface InformativoGeneratorProps {
@@ -21,42 +19,13 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
   currentTime,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [allAnnotations, setAllAnnotations] = useState(getSavedAnnotations());
-
-  // Listen to live annotation updates and storage changes
-  React.useEffect(() => {
-    const handleUpdate = () => {
-      setAllAnnotations(getSavedAnnotations());
-    };
-    handleUpdate();
-    window.addEventListener('tide_annotations_updated', handleUpdate);
-    window.addEventListener('storage', handleUpdate);
-    return () => {
-      window.removeEventListener('tide_annotations_updated', handleUpdate);
-      window.removeEventListener('storage', handleUpdate);
-    };
-  }, []);
 
   const year = selectedDate.getFullYear();
   const month = selectedDate.getMonth() + 1;
   const day = selectedDate.getDate();
-  const targetDateStr = formatBargeDate(selectedDate);
 
   const dayTides = getTidesForDay(year, month, day);
   const hourlyCurve = get24hTideCurve(selectedDate, port, 24); // 24 hourly points
-
-  // Load scheduled barge operations for the day and port
-  const dayAnnotations = allAnnotations
-    .filter((a) => {
-      if (a.portId !== port.id) return false;
-      return formatBargeDate(a.dateTime) === targetDateStr;
-    })
-    .sort((a, b) => {
-      const tA = parseBargeDateTime(a.dateTime).getTime();
-      const tB = parseBargeDateTime(b.dateTime).getTime();
-      return tA - tB;
-    });
 
   const dateFormatted = selectedDate.toLocaleDateString('pt-BR', {
     weekday: 'long',
@@ -80,7 +49,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     }
   };
 
-  // Generate clean WhatsApp message with exact operator barge maneuver times & share link
+  // Generate clean WhatsApp message
   const generateWhatsAppText = () => {
     let msg = `🌊 *BOLETIM INFORMATIVO DE MARÉS*\n`;
     msg += `📍 *${port.fullName.toUpperCase()}*\n`;
@@ -95,26 +64,6 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
       msg += `• *${evt.time}* - ${typeLabel}: *${h} m*\n`;
     });
 
-    if (dayAnnotations.length > 0) {
-      msg += `\n🚢 *PROGRAMAÇÃO DE BARCAÇAS & OPERAÇÕES:*\n`;
-      dayAnnotations.forEach((ann) => {
-        const timeStr = formatBargeTime(ann.dateTime);
-        const dt = parseBargeDateTime(ann.dateTime);
-        const nextHigh = getNextHighTide(dt, port);
-        const icon = ann.category === 'barcaca' ? '⛴️' : ann.category === 'navio' ? '🚢' : '⚓';
-        const statusEmoji = ann.bargeStatus === 'Finalizada' ? '🟢' : ann.bargeStatus === 'Operação de Descarga' ? '🟣' : '🔴';
-
-        msg += `• ${icon} *${ann.title}* (${timeStr} BRT)\n`;
-        if (ann.bargeStatus) {
-          msg += `  - Status: ${statusEmoji} *${ann.bargeStatus}*\n`;
-        }
-        msg += `  - Próxima Preamar: *🔼 ${nextHigh.timeStr} (${nextHigh.height.toFixed(2)} m)*\n`;
-        if (ann.notes && ann.notes.trim()) {
-          msg += `  - Obs: _${ann.notes.trim()}_\n`;
-        }
-      });
-    }
-
     if (weather) {
       msg += `\n💨 *METEOROLOGIA & MAR:*\n`;
       msg += `• Vento: *${weather.windSpeedKnots} nós* (${weather.windDirectionLabel}) • Rajadas: *${weather.windGustKnots} nós*\n`;
@@ -127,13 +76,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     msg += `• Calado máximo seguro na maré cheia: *~${(port.criticalShallowDepth + 3.2).toFixed(1)} m*\n`;
     msg += `• Atenção ao banco arenoso da Ponta do Upanema / Foz do Rio Açu.\n`;
     msg += `• Contato Praticagem / Controle: Canal VHF 16 / 68.\n\n`;
-
-    const shareUrl = generateShareableFleetUrl(allAnnotations);
-    if (shareUrl) {
-      msg += `📱 *Acompanhamento em Tempo Real:* ${shareUrl}\n\n`;
-    }
-
-    msg += `_Emitido pelo Sistema Informativo de Marés de Areia Branca & Macau._`;
+    msg += `_Emitido pelo Sistema de Controle de Marés de Areia Branca & Macau._`;
 
     return msg;
   };
@@ -143,15 +86,6 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
-  };
-
-  const handleCopyLink = () => {
-    const shareUrl = generateShareableFleetUrl(allAnnotations);
-    if (shareUrl) {
-      navigator.clipboard.writeText(shareUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 3000);
-    }
   };
 
   const handlePrint = () => {
@@ -172,20 +106,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleCopyLink}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition border ${
-              copiedLink
-                ? 'bg-cyan-950 text-cyan-300 border-cyan-500'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-            }`}
-            title="Copiar link com a programação das barcaças para acesso externo"
-          >
-            {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4 text-cyan-400" />}
-            {copiedLink ? 'Link Copiado!' : 'Copiar Link c/ Barcaças'}
-          </button>
-
+        <div className="flex items-center gap-2">
           <button
             onClick={handleCopyWhatsApp}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-md ${
@@ -292,83 +213,11 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
           </div>
         </div>
 
-        {/* Section: Programação de Barcaças e Operações Náuticas */}
-        <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5 flex items-center gap-1.5 font-mono">
-            <Ship className="w-4 h-4" />
-            2. PROGRAMAÇÃO DE BARCAÇAS & MANOBRAS OPERACIONAIS
-          </h3>
-
-          {dayAnnotations.length === 0 ? (
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs font-mono text-slate-400">
-              Nenhuma manobra de barcaça programada para esta data ({dateFormatted}).
-            </div>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-800">
-              <table className="w-full text-xs font-mono text-left">
-                <thead className="bg-slate-900 text-slate-400 border-b border-slate-800">
-                  <tr>
-                    <th className="p-2.5">Embarcação</th>
-                    <th className="p-2.5">Horário da Manobra</th>
-                    <th className="p-2.5">Status Operacional</th>
-                    <th className="p-2.5">Próxima Preamar</th>
-                    <th className="p-2.5">Observações / VHF</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
-                  {dayAnnotations.map((ann) => {
-                    const timeStr = formatBargeTime(ann.dateTime);
-                    const dt = parseBargeDateTime(ann.dateTime);
-                    const nextHigh = getNextHighTide(dt, port);
-                    const itemColor = ann.color || '#38bdf8';
-
-                    return (
-                      <tr key={ann.id} className="hover:bg-slate-900/40">
-                        <td className="p-2.5 font-bold text-white flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: itemColor }} />
-                          <span>{ann.category === 'barcaca' ? '⛴️' : '🚢'} {ann.title}</span>
-                        </td>
-                        <td className="p-2.5 text-cyan-300 font-bold">{timeStr} BRT</td>
-                        <td className="p-2.5">
-                          {ann.bargeStatus ? (
-                            <span
-                              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
-                                ann.bargeStatus === 'Finalizada'
-                                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60'
-                                  : ann.bargeStatus === 'Operação de Descarga'
-                                  ? 'bg-purple-950/80 text-purple-300 border-purple-700/60'
-                                  : 'bg-rose-950/80 text-rose-300 border-rose-700/60'
-                              }`}
-                            >
-                              {ann.bargeStatus === 'Finalizada' && '🟢 '}
-                              {ann.bargeStatus === 'Operação de Descarga' && '🟣 '}
-                              {ann.bargeStatus === 'No largo / Aguardando' && '🔴 '}
-                              {ann.bargeStatus}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </td>
-                        <td className="p-2.5 text-emerald-300 font-bold font-mono">
-                          🔼 Preamar {nextHigh.timeStr} ({nextHigh.height.toFixed(2)} m)
-                        </td>
-                        <td className="p-2.5 text-slate-300 italic text-[11px]">
-                          {ann.notes && ann.notes.trim() ? ann.notes : '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
         {/* Hourly Progression Table */}
         <div>
           <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5 flex items-center gap-1.5 font-mono">
             <span>🕒</span>
-            3. PROJEÇÃO HORÁRIA CONTÍNUA (ALTURA & LÂMINA D'ÁGUA)
+            2. PROJEÇÃO HORÁRIA CONTÍNUA (ALTURA & LÂMINA D'ÁGUA)
           </h3>
           <div className="overflow-x-auto rounded-xl border border-slate-800">
             <table className="w-full text-xs font-mono text-left">
@@ -411,7 +260,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2.5 flex items-center gap-1.5 font-mono">
               <Wind className="w-4 h-4" />
-              4. METEOROLOGIA & CONDIÇÕES DO MAR
+              3. METEOROLOGIA & CONDIÇÕES DO MAR
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-xs font-mono bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
               <div>
@@ -445,5 +294,3 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     </div>
   );
 };
-
-

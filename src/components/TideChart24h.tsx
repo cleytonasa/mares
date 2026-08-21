@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { PortConfig } from '../types/maritime';
 import { get48hTideCurve, calculateCurrentTide } from '../utils/tideCalculations';
 import { getTidesForDay } from '../data/tideData2026';
@@ -19,6 +19,16 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
   currentTime,
   onSelectTime,
 }) => {
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    dateStr: string;
+    time: string;
+    height: number;
+    depth: number;
+    x: number;
+    y: number;
+    rawDate: Date;
+  } | null>(null);
+
   // Day 1 (Reference Date)
   const d1 = new Date(selectedDate);
   const year1 = d1.getFullYear();
@@ -39,8 +49,8 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
 
   // SVG dimensions
   const svgWidth = 900;
-  const svgHeight = 310;
-  const padding = { top: 40, right: 30, bottom: 68, left: 45 };
+  const svgHeight = 305;
+  const padding = { top: 35, right: 30, bottom: 68, left: 45 };
 
   const chartWidth = svgWidth - padding.left - padding.right;
   const chartHeight = svgHeight - padding.top - padding.bottom;
@@ -90,30 +100,62 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
     onChangeDate(new Date());
   };
 
-  const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (onSelectTime) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickX = Math.max(0, Math.min(svgWidth, ((e.clientX - rect.left) / rect.width) * svgWidth));
-      const fraction = Math.max(0, Math.min(1, (clickX - padding.left) / chartWidth));
-      const totalMinutes = fraction * 2880; // 48 hours = 2880 minutes
-      const targetDate = new Date(startWindowTs + totalMinutes * 60 * 1000);
-      onSelectTime(targetDate);
+  const updateHoverFromClientX = (clientX: number, targetSvg: SVGSVGElement) => {
+    const rect = targetSvg.getBoundingClientRect();
+    const clickX = Math.max(0, Math.min(svgWidth, ((clientX - rect.left) / rect.width) * svgWidth));
+    const fraction = Math.max(0, Math.min(1, (clickX - padding.left) / chartWidth));
+
+    const totalMinutes = fraction * 2880; // 48 hours = 2880 minutes
+    const testDate = new Date(startWindowTs + totalMinutes * 60 * 1000);
+
+    const hours = testDate.getHours();
+    const minutes = testDate.getMinutes();
+    const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    const dateStr = testDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
+
+    const testState = calculateCurrentTide(testDate, port);
+    const y = scaleY(testState.currentHeight);
+
+    setHoveredPoint({
+      dateStr,
+      time: timeStr,
+      height: testState.currentHeight,
+      depth: testState.currentWaterDepth,
+      x: clickX,
+      y,
+      rawDate: testDate,
+    });
+  };
+
+  const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    updateHoverFromClientX(e.clientX, e.currentTarget);
+  };
+
+  const handleSvgTouch = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (e.touches && e.touches[0]) {
+      updateHoverFromClientX(e.touches[0].clientX, e.currentTarget);
+    }
+  };
+
+  const handleSvgClick = () => {
+    if (hoveredPoint && onSelectTime) {
+      onSelectTime(hoveredPoint.rawDate);
     }
   };
 
   return (
     <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 sm:p-5 md:p-6 shadow-xl text-slate-100 space-y-4">
-      {/* Top Bar with Date Navigation */}
+      {/* Top Bar with Date Navigation & 48h Indicator */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
-        <div className="flex items-center gap-3">
+        <div>
           <h3 className="text-sm font-bold tracking-wider text-cyan-400 uppercase flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            Curva Harmônica de Variação de Marés (48 Horas)
+            Curva Harmônica de Variação (48 Horas)
           </h3>
         </div>
 
         {/* Date Selector Controls */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={handlePrevDay}
             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700"
@@ -145,11 +187,15 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
         </div>
       </div>
 
-      {/* SVG Chart Container */}
+      {/* SVG Chart Container - Fully visible and scalable on mobile screens */}
       <div className="relative w-full overflow-hidden select-none pt-2 bg-slate-950/40 rounded-xl border border-slate-800/60 p-1 sm:p-2">
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          className="w-full h-auto block cursor-pointer"
+          className="w-full h-auto block cursor-crosshair touch-none"
+          onMouseMove={handleSvgMouseMove}
+          onMouseLeave={() => setHoveredPoint(null)}
+          onTouchStart={handleSvgTouch}
+          onTouchMove={handleSvgTouch}
           onClick={handleSvgClick}
         >
           <defs>
@@ -190,28 +236,19 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             strokeDasharray="4 3"
           />
 
-          {/* Bottom baseline */}
-          <line
-            x1={padding.left}
-            y1={svgHeight - padding.bottom}
-            x2={svgWidth - padding.right}
-            y2={svgHeight - padding.bottom}
-            stroke="#334155"
-            strokeWidth="1.5"
-          />
-
-          {/* Y Axis ticks & labels */}
+          {/* Grid lines & Y Axis labels */}
           {[0, 1, 2, 3, 4].map((level) => {
             const y = scaleY(level);
             return (
               <g key={level}>
                 <line
-                  x1={padding.left - 4}
+                  x1={padding.left}
                   y1={y}
-                  x2={padding.left}
+                  x2={svgWidth - padding.right}
                   y2={y}
-                  stroke="#475569"
-                  strokeWidth="1"
+                  stroke="#334155"
+                  strokeDasharray={level === 0 ? undefined : '3 3'}
+                  strokeWidth={level === 0 ? 1.5 : 0.8}
                 />
                 <text
                   x={padding.left - 8}
@@ -227,7 +264,29 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             );
           })}
 
-          {/* X Axis Time Marks across 48 Hours */}
+          {/* Mean Sea Level Line (Nível Médio) */}
+          <line
+            x1={padding.left}
+            y1={scaleY(port.meanLevel)}
+            x2={svgWidth - padding.right}
+            y2={scaleY(port.meanLevel)}
+            stroke="#06b6d4"
+            strokeDasharray="4 4"
+            strokeWidth="1"
+            opacity="0.6"
+          />
+          <text
+            x={svgWidth - padding.right}
+            y={scaleY(port.meanLevel) - 4}
+            fill="#38bdf8"
+            fontSize="10"
+            fontFamily="monospace"
+            textAnchor="end"
+          >
+            NM {port.meanLevel}m
+          </text>
+
+          {/* X Axis Time Marks across 48 Hours (Every 6 hours) */}
           {[
             { hour: 0, day: 1, label: '00h' },
             { hour: 6, day: 1, label: '06h' },
@@ -279,8 +338,9 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             );
           })}
 
-          {/* Day Date Legends */}
+          {/* Day Date Legends positioned below the hours axis */}
           <g>
+            {/* Day 1 bracket & date */}
             <line
               x1={scaleX(0.04)}
               y1={svgHeight - padding.bottom + 34}
@@ -302,6 +362,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
               {d1.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
             </text>
 
+            {/* Day 2 bracket & date */}
             <line
               x1={scaleX(0.56)}
               y1={svgHeight - padding.bottom + 34}
@@ -328,16 +389,25 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
           <path d={areaD} fill="url(#tideGradient48)" />
           <path d={pathD} fill="none" stroke="#22d3ee" strokeWidth="2.5" strokeLinecap="round" />
 
-          {/* Day 1 Official Events Markers */}
+          {/* Day 1 Events Markers (0-24h) */}
           {day1Tides.events.map((evt, idx) => {
             const [h, m] = evt.time.split(':').map(Number);
-            const fraction = (h * 60 + m) / 2880;
+            const fraction = (h * 60 + m) / 2880; // in 48h
             const x = scaleX(fraction);
             const adjustedHeight = evt.height * port.heightMultiplier;
             const y = scaleY(adjustedHeight);
 
             return (
               <g key={`d1-${idx}`}>
+                <line
+                  x1={x}
+                  y1={y}
+                  x2={x}
+                  y2={svgHeight - padding.bottom}
+                  stroke={evt.type === 'high' ? '#38bdf8' : '#64748b'}
+                  strokeDasharray="2 2"
+                  strokeWidth="0.8"
+                />
                 <circle
                   cx={x}
                   cy={y}
@@ -361,16 +431,25 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             );
           })}
 
-          {/* Day 2 Official Events Markers */}
+          {/* Day 2 Events Markers (24-48h) */}
           {day2Tides.events.map((evt, idx) => {
             const [h, m] = evt.time.split(':').map(Number);
-            const fraction = (1440 + h * 60 + m) / 2880;
+            const fraction = (1440 + h * 60 + m) / 2880; // in 48h
             const x = scaleX(fraction);
             const adjustedHeight = evt.height * port.heightMultiplier;
             const y = scaleY(adjustedHeight);
 
             return (
               <g key={`d2-${idx}`}>
+                <line
+                  x1={x}
+                  y1={y}
+                  x2={x}
+                  y2={svgHeight - padding.bottom}
+                  stroke={evt.type === 'high' ? '#38bdf8' : '#64748b'}
+                  strokeDasharray="2 2"
+                  strokeWidth="0.8"
+                />
                 <circle
                   cx={x}
                   cy={y}
@@ -414,31 +493,77 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
                 stroke="#ffffff"
                 strokeWidth="2"
               />
-              {/* Clean Agora Badge */}
-              <rect
-                x={currentCursorX - 32}
-                y={padding.top - 20}
-                width="64"
-                height="16"
-                rx="4"
-                fill="#450a0a"
-                stroke="#ef4444"
-                strokeWidth="1"
-              />
               <text
                 x={currentCursorX}
                 y={padding.top - 8}
-                fill="#fca5a5"
-                fontSize="9.5"
+                fill="#f87171"
+                fontSize="11"
                 fontFamily="monospace"
                 fontWeight="bold"
                 textAnchor="middle"
               >
-                AGORA {currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                AGORA ({currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})
               </text>
             </g>
           )}
+
+          {/* Hover Pointer Marker */}
+          {hoveredPoint && (
+            <g>
+              <line
+                x1={hoveredPoint.x}
+                y1={padding.top}
+                x2={hoveredPoint.x}
+                y2={svgHeight - padding.bottom}
+                stroke="#38bdf8"
+                strokeWidth="1"
+              />
+              <circle
+                cx={hoveredPoint.x}
+                cy={hoveredPoint.y}
+                r="4.5"
+                fill="#38bdf8"
+                stroke="#ffffff"
+                strokeWidth="1.5"
+              />
+            </g>
+          )}
         </svg>
+
+        {/* Hover Tooltip Floating Card */}
+        {hoveredPoint && (
+          <div
+            className="absolute z-20 pointer-events-none bg-slate-950/95 border border-cyan-500/50 p-2.5 rounded-xl shadow-2xl text-xs font-mono text-slate-200 backdrop-blur max-w-[260px] sm:max-w-xs"
+            style={{
+              left: `${Math.min(75, Math.max(5, (hoveredPoint.x / svgWidth) * 100))}%`,
+              top: '15px',
+            }}
+          >
+            <div className="text-cyan-400 font-bold flex items-center justify-between gap-3">
+              <span>📅 {hoveredPoint.dateStr}</span>
+              <span>🕒 {hoveredPoint.time}</span>
+            </div>
+            <div className="mt-1 flex justify-between gap-3">
+              <span className="text-slate-400">Altura da Maré:</span>
+              <span className="text-white font-bold">{hoveredPoint.height.toFixed(2)} m</span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="text-slate-400">Nível na Barra:</span>
+              <span className="text-emerald-400 font-bold">{hoveredPoint.depth.toFixed(2)} m</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Hint & Legend */}
+      <div className="mt-2 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5">
+          <Info className="w-3.5 h-3.5 text-cyan-400" />
+          Passe o mouse ou toque sobre a curva para inspecionar qualquer horário das 48 horas (hoje e amanhã).
+        </span>
+        <span className="font-mono text-[11px] text-slate-500">
+          DHN Carta 703 • 48 Horas Contínuas
+        </span>
       </div>
     </div>
   );
