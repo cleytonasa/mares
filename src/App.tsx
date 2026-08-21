@@ -8,6 +8,7 @@ import { TideTableMonthly } from './components/TideTableMonthly';
 import { InformativoGenerator } from './components/InformativoGenerator';
 import { AlertSettingsModal } from './components/AlertSettingsModal';
 import { NotificationModal } from './components/NotificationModal';
+import { SaltShipmentsDashboard } from './components/SaltShipmentsDashboard';
 import { PORTS_DATA } from './data/portsData';
 import { PortConfig, WeatherData, AlertThresholds, CustomUserLocation } from './types/maritime';
 import { INITIAL_USER_LOCATION, decimalToDMS } from './data/vesselTrafficData';
@@ -19,7 +20,7 @@ import {
   processMaritimeNotifications,
   NotificationPreferences,
 } from './services/notificationService';
-import { AlertTriangle, MapPin, Compass, Table, Crosshair, CloudSun, Map } from 'lucide-react';
+import { AlertTriangle, MapPin, Compass, Table, Crosshair, CloudSun, Map, Ship } from 'lucide-react';
 
 const DEFAULT_THRESHOLDS: AlertThresholds = {
   minTideHeight: 1.0,
@@ -32,7 +33,7 @@ const DEFAULT_THRESHOLDS: AlertThresholds = {
 
 export default function App() {
   const [selectedPortId, setSelectedPortId] = useState<'areia_branca' | 'macau'>('areia_branca');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'table' | 'map' | 'report'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'table' | 'map' | 'report' | 'shipments'>('dashboard');
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [simulatedTime, setSimulatedTime] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -207,9 +208,9 @@ export default function App() {
               loading={weatherLoading}
             />
 
-            {/* Quick Actions & Navigation Module - Grouped 2x2 Grid for compact view */}
+            {/* Quick Actions & Navigation Module */}
             <div className="bg-slate-900/90 rounded-xl sm:rounded-2xl border border-slate-800 p-2.5 sm:p-4 shadow-xl text-slate-100">
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
                 {/* 1. Tábua Oficial */}
                 <div
                   onClick={() => setActiveTab('table')}
@@ -267,7 +268,26 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 4. Boletim WhatsApp */}
+                {/* 4. Embarques de Sal (INTERSAL) */}
+                <div
+                  onClick={() => setActiveTab('shipments')}
+                  className="p-2.5 sm:p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-slate-950 cursor-pointer transition shadow-md group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide truncate">
+                        INTERSAL
+                      </span>
+                      <Ship className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 group-hover:text-cyan-400 shrink-0 transition" />
+                    </div>
+                    <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Embarques de Sal</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 leading-snug line-clamp-2">
+                      1.2M Tons, 34 navios, gráficos e line-up.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 5. Boletim WhatsApp */}
                 <div
                   onClick={() => setActiveTab('report')}
                   className="p-2.5 sm:p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-slate-950 cursor-pointer transition shadow-md group flex flex-col justify-between"
@@ -322,6 +342,11 @@ export default function App() {
             weather={weather}
             currentTime={effectiveTime}
           />
+        )}
+
+        {/* Tab 5: Salt Shipments & Line-Up INTERSAL */}
+        {activeTab === 'shipments' && (
+          <SaltShipmentsDashboard />
         )}
       </main>
 
