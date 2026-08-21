@@ -16,10 +16,12 @@ export interface CurrentTideState {
   trendDescription: string;
   previousEvent: AbsoluteTidePoint;
   nextEvent: AbsoluteTidePoint;
+  nextHighEvent: AbsoluteTidePoint;
   percentCycle: number; // 0 to 100% from prev to next
   amplitude: number; // difference in m between prev and next
   coefficientType: 'SIZÍGIA' | 'QUADRATURA' | 'INTERMEDIÁRIA';
   minutesToNextEvent: number;
+  minutesToNextHighEvent: number;
   currentWaterDepth: number; // datum depth + tide height
 }
 
@@ -133,6 +135,13 @@ export function calculateCurrentTide(targetDate: Date, port: PortConfig): Curren
   const minutesToNextEvent = Math.max(0, Math.round((next.timestamp - nowTs) / (1000 * 60)));
   const currentWaterDepth = Number((port.criticalShallowDepth + currentHeight).toFixed(2));
 
+  // Find the next high tide (Preia-mar) event specifically
+  let nextHighEvent = events.find((evt) => evt.type === 'high' && evt.timestamp > nowTs);
+  if (!nextHighEvent) {
+    nextHighEvent = next.type === 'high' ? next : prev;
+  }
+  const minutesToNextHighEvent = Math.max(0, Math.round((nextHighEvent.timestamp - nowTs) / (1000 * 60)));
+
   return {
     currentHeight,
     rateOfChangeCmPerHour: Number(currentRateCmH.toFixed(1)),
@@ -140,10 +149,12 @@ export function calculateCurrentTide(targetDate: Date, port: PortConfig): Curren
     trendDescription,
     previousEvent: prev,
     nextEvent: next,
+    nextHighEvent,
     percentCycle: Math.round(fraction * 100),
     amplitude: Number(amplitude.toFixed(2)),
     coefficientType,
     minutesToNextEvent,
+    minutesToNextHighEvent,
     currentWaterDepth,
   };
 }

@@ -28,10 +28,12 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
     trendDescription,
     previousEvent,
     nextEvent,
+    nextHighEvent,
     percentCycle,
     amplitude,
     coefficientType,
     minutesToNextEvent,
+    minutesToNextHighEvent,
     currentWaterDepth,
   } = tideState;
 
@@ -51,8 +53,9 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
     } catch {}
   };
 
-  const hoursToNext = Math.floor(minutesToNextEvent / 60);
-  const minsToNext = minutesToNextEvent % 60;
+  const highEventToDisplay = nextHighEvent || (nextEvent.type === 'high' ? nextEvent : previousEvent);
+  const hoursToNextHigh = Math.floor(minutesToNextHighEvent / 60);
+  const minsToNextHigh = minutesToNextHighEvent % 60;
 
   // Calculate percentage of water level inside gauge (0m to 4.0m range)
   const maxScale = 4.0;
@@ -250,19 +253,19 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
               <span className="block text-[11px] text-cyan-400 font-semibold">{previousEvent.height.toFixed(2)} m</span>
             </div>
 
-            {/* Next Event */}
+            {/* Next High Tide Event (Sempre Próxima Preia-mar) */}
             <div className="bg-cyan-950/40 p-2.5 rounded-lg border border-cyan-800/50">
               <span className="text-[10px] uppercase text-cyan-300 font-semibold block">
-                {nextEvent.type === 'high' ? 'Próxima Preia-mar' : 'Próxima Baixa-mar'}
+                Próxima Preia-mar
               </span>
-              <span className="text-sm font-bold text-white">{nextEvent.timeStr}</span>
-              <span className="block text-[11px] text-emerald-400 font-bold">{nextEvent.height.toFixed(2)} m</span>
+              <span className="text-sm font-bold text-white">{highEventToDisplay.timeStr}</span>
+              <span className="block text-[11px] text-emerald-400 font-bold">{highEventToDisplay.height.toFixed(2)} m</span>
             </div>
           </div>
 
           {/* Countdown pill */}
           <div className="mt-3 text-center text-xs font-mono py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-800">
-            Faltam <span className="text-cyan-400 font-bold">{hoursToNext}h {minsToNext}m</span> para {nextEvent.type === 'high' ? 'Preia-mar' : 'Baixa-mar'}
+            Faltam <span className="text-cyan-400 font-bold">{hoursToNextHigh}h {minsToNextHigh}m</span> para a Preia-mar
           </div>
         </div>
 

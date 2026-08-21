@@ -88,11 +88,6 @@ export default function App() {
     activeAlerts.push(`Maré baixa crítica (${currentTideState.currentHeight.toFixed(2)}m < ${thresholds.minTideHeight}m)`);
   }
 
-  const handleSelectTimeFromChart = (time: Date) => {
-    setSimulatedTime(time);
-    setSelectedDate(time);
-  };
-
   const handleResetSimulation = () => {
     setSimulatedTime(null);
     setSelectedDate(new Date());
@@ -131,7 +126,7 @@ export default function App() {
         {/* Tab 1: Dashboard */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            {/* 1. Real-time Tide Gauge Card with Integrated Wind Speed */}
+            {/* 1. Real-time Tide Gauge Card with Integrated Wind & Marine Conditions */}
             <CurrentTideCard
               tideState={currentTideState}
               port={activePort}
@@ -147,7 +142,6 @@ export default function App() {
               selectedDate={selectedDate}
               onChangeDate={setSelectedDate}
               currentTime={effectiveTime}
-              onSelectTime={handleSelectTimeFromChart}
             />
 
             {/* Quick Actions / Highlights Row */}
