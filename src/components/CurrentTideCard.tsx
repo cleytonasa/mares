@@ -122,10 +122,6 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
               Voltar ao Tempo Real
             </button>
           )}
-
-          <span className="px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-[11px] font-mono text-slate-300">
-            ZH Datum: 0.00 m
-          </span>
         </div>
       </div>
 
