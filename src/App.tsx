@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { CurrentTideCard } from './components/CurrentTideCard';
 import { TideChart24h } from './components/TideChart24h';
+import { WeeklyWeatherForecast } from './components/WeeklyWeatherForecast';
 import { InteractiveNauticalMap } from './components/InteractiveNauticalMap';
 import { TideTableMonthly } from './components/TideTableMonthly';
 import { InformativoGenerator } from './components/InformativoGenerator';
@@ -109,23 +110,23 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 pt-5 space-y-6">
+      <main className="max-w-7xl mx-auto px-2.5 sm:px-6 pt-3 sm:pt-5 space-y-3.5 sm:space-y-6">
         {/* Active Alert Banner */}
         {activeAlerts.length > 0 && (
-          <div className="p-3.5 bg-amber-950/50 border border-amber-500/50 rounded-2xl flex items-center gap-3 text-xs text-amber-200 shadow-lg">
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+          <div className="p-2.5 sm:p-3.5 bg-amber-950/50 border border-amber-500/50 rounded-xl sm:rounded-2xl flex items-center gap-2.5 sm:gap-3 text-xs text-amber-200 shadow-lg">
+            <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
             <div>
-              <span className="font-bold uppercase tracking-wider block text-amber-300">
+              <span className="font-bold uppercase tracking-wider block text-[11px] sm:text-xs text-amber-300">
                 Condições Meteorológicas & Maré
               </span>
-              <span>{activeAlerts.join(' • ')}</span>
+              <span className="text-[11px] sm:text-xs">{activeAlerts.join(' • ')}</span>
             </div>
           </div>
         )}
 
         {/* Tab 1: Dashboard */}
         {activeTab === 'dashboard' && (
-          <div className="space-y-6">
+          <div className="space-y-3.5 sm:space-y-6">
             {/* 1. Real-time Tide Gauge Card with Integrated Wind & Marine Conditions */}
             <CurrentTideCard
               tideState={currentTideState}
@@ -142,6 +143,13 @@ export default function App() {
               selectedDate={selectedDate}
               onChangeDate={setSelectedDate}
               currentTime={effectiveTime}
+            />
+
+            {/* 3. 7-Day Weekly Weather & Marine Forecast (Previsão do Tempo 7 Dias) */}
+            <WeeklyWeatherForecast
+              forecast={weather?.weeklyForecast}
+              port={activePort}
+              loading={weatherLoading}
             />
 
             {/* Quick Actions / Highlights Row */}

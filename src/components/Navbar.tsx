@@ -22,123 +22,134 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   return (
     <header className="bg-slate-900 text-slate-100 border-b border-slate-800 sticky top-0 z-40 shadow-lg">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6">
-        {/* Top Info Bar */}
-        <div className="py-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80">
-          <div className="flex items-center gap-3">
-            {/* Intersal Sala de Operação Official Logo */}
-            <div className="w-11 h-11 rounded-full bg-white p-0.5 shadow-md flex items-center justify-center shrink-0 border border-emerald-500/40">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-6">
+        {/* Top Info Bar: Brand + Realtime Clock in a single compact row */}
+        <div className="py-2 sm:py-2.5 flex items-center justify-between gap-2 border-b border-slate-800/80">
+          {/* Logo & Title */}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-white p-0.5 shadow-md flex items-center justify-center shrink-0 border border-emerald-500/40">
               <IntersalLogo className="w-full h-full" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-1.5 font-sans">
-                  Sala de Controle - Marés
-                </h1>
-              </div>
-              <p className="text-xs text-slate-400 font-sans flex items-center gap-1.5">
+            <div className="min-w-0">
+              <h1 className="text-xs sm:text-base font-bold tracking-tight text-white truncate font-sans">
+                Sala de Controle - Marés
+              </h1>
+              <p className="text-[10px] sm:text-xs text-slate-400 font-sans truncate">
                 <span className="font-medium text-slate-300">Areia Branca & Macau - RN</span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 ml-auto">
-            {/* Live Clock */}
-            <div className="flex flex-col text-right font-mono bg-slate-800/60 px-3 py-1 rounded-lg border border-slate-700/60">
-              <span className="text-xs font-bold text-slate-100">
-                {currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} <span className="text-[10px] text-cyan-400 font-normal">BRT (UTC-3)</span>
-              </span>
-              <span className="text-[10px] text-slate-400">
-                {currentTime.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
-              </span>
+          {/* Compact Live Clock */}
+          <div className="shrink-0 font-mono bg-slate-800/80 px-2 sm:px-3 py-1 rounded-lg border border-slate-700/70 text-right shadow-sm">
+            <div className="text-[11px] sm:text-xs font-bold text-white leading-tight flex items-center justify-end gap-1">
+              <span>{currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              <span className="text-[9px] sm:text-[10px] text-cyan-400 font-medium">BRT</span>
+            </div>
+            <div className="text-[9px] sm:text-[10px] text-slate-400 leading-tight">
+              {currentTime.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
             </div>
           </div>
         </div>
 
         {/* Navigation & Port Selector Bar */}
-        <div className="py-2 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-          {/* Port Toggle */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-950/70 rounded-xl border border-slate-800 max-w-fit">
-            <button
-              id="port-select-areia-branca"
-              onClick={() => onSelectPort('areia_branca')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
-                activePort.id === 'areia_branca'
-                  ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
-            >
-              <Anchor className="w-3.5 h-3.5" />
-              Areia Branca - RN
-            </button>
-            <button
-              id="port-select-macau"
-              onClick={() => onSelectPort('macau')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
-                activePort.id === 'macau'
-                  ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
-            >
-              <Compass className="w-3.5 h-3.5" />
-              Macau - RN
-            </button>
+        <div className="py-1.5 sm:py-2 flex flex-col md:flex-row md:items-center justify-between gap-1.5 sm:gap-2.5">
+          {/* Grouped Controls Container (Scrollable on small screens) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none w-full justify-between md:justify-start">
+            {/* Port Toggle (Compact on mobile) */}
+            <div className="flex items-center gap-1 p-0.5 sm:p-1 bg-slate-950/80 rounded-lg sm:rounded-xl border border-slate-800 shrink-0">
+              <button
+                id="port-select-areia-branca"
+                onClick={() => onSelectPort('areia_branca')}
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-semibold transition flex items-center gap-1 sm:gap-1.5 ${
+                  activePort.id === 'areia_branca'
+                    ? 'bg-cyan-600 text-white shadow-sm shadow-cyan-600/30'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                }`}
+              >
+                <Anchor className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                <span>Areia Branca</span>
+              </button>
+              <button
+                id="port-select-macau"
+                onClick={() => onSelectPort('macau')}
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-semibold transition flex items-center gap-1 sm:gap-1.5 ${
+                  activePort.id === 'macau'
+                    ? 'bg-cyan-600 text-white shadow-sm shadow-cyan-600/30'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                }`}
+              >
+                <Compass className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                <span>Macau</span>
+              </button>
+            </div>
+
+            {/* Subtle Divider (Desktop only or inline) */}
+            <div className="hidden md:block w-px h-5 bg-slate-800" />
+
+            {/* Tab Navigation (Responsive pills with icons and short labels on mobile) */}
+            <nav className="flex items-center gap-1 shrink-0 ml-auto md:ml-0 overflow-x-auto scrollbar-none">
+              <button
+                id="nav-tab-dashboard"
+                onClick={() => onChangeTab('dashboard')}
+                title="Painel em Tempo Real"
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 whitespace-nowrap ${
+                  activeTab === 'dashboard'
+                    ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }`}
+              >
+                <Waves className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-cyan-400" />
+                <span className="hidden xs:inline sm:inline">Painel</span>
+                <span className="inline xs:hidden sm:hidden">Painel</span>
+              </button>
+
+              <button
+                id="nav-tab-map"
+                onClick={() => onChangeTab('map')}
+                title="Mapa Náutico Georreferenciado"
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 whitespace-nowrap ${
+                  activeTab === 'map'
+                    ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }`}
+              >
+                <Map className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-indigo-400" />
+                <span className="hidden sm:inline">Mapa Náutico</span>
+                <span className="sm:hidden">Mapa</span>
+              </button>
+
+              <button
+                id="nav-tab-table"
+                onClick={() => onChangeTab('table')}
+                title="Tábua de Marés DHN"
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 whitespace-nowrap ${
+                  activeTab === 'table'
+                    ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }`}
+              >
+                <Table className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-emerald-400" />
+                <span className="hidden sm:inline">Tábua DHN</span>
+                <span className="sm:hidden">Tábua</span>
+              </button>
+
+              <button
+                id="nav-tab-report"
+                onClick={() => onChangeTab('report')}
+                title="Boletim Informativo de Maré"
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 whitespace-nowrap ${
+                  activeTab === 'report'
+                    ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                }`}
+              >
+                <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-amber-400" />
+                <span className="hidden sm:inline">Boletim</span>
+                <span className="sm:hidden">Boletim</span>
+              </button>
+            </nav>
           </div>
-
-          {/* Tab Navigation */}
-          <nav className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-            <button
-              id="nav-tab-dashboard"
-              onClick={() => onChangeTab('dashboard')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'dashboard'
-                  ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-              }`}
-            >
-              <Waves className="w-3.5 h-3.5" />
-              Painel em Tempo Real
-            </button>
-
-            <button
-              id="nav-tab-map"
-              onClick={() => onChangeTab('map')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'map'
-                  ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-              }`}
-            >
-              <Map className="w-3.5 h-3.5" />
-              Mapa Náutico Georreferenciado
-            </button>
-
-            <button
-              id="nav-tab-table"
-              onClick={() => onChangeTab('table')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'table'
-                  ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-              }`}
-            >
-              <Table className="w-3.5 h-3.5" />
-              Tábua de Marés
-            </button>
-
-            <button
-              id="nav-tab-report"
-              onClick={() => onChangeTab('report')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
-                activeTab === 'report'
-                  ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/30'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              Boletim Informativo
-            </button>
-          </nav>
         </div>
       </div>
     </header>

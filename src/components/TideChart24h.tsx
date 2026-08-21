@@ -1,5 +1,4 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PortConfig } from '../types/maritime';
 import { get48hTideCurve, calculateCurrentTide } from '../utils/tideCalculations';
 import { getTidesForDay } from '../data/tideData2026';
@@ -7,7 +6,7 @@ import { getTidesForDay } from '../data/tideData2026';
 interface TideChart48hProps {
   port: PortConfig;
   selectedDate: Date;
-  onChangeDate: (newDate: Date) => void;
+  onChangeDate?: (newDate: Date) => void;
   currentTime: Date;
   onSelectTime?: (time: Date) => void;
 }
@@ -15,7 +14,6 @@ interface TideChart48hProps {
 export const TideChart24h: React.FC<TideChart48hProps> = ({
   port,
   selectedDate,
-  onChangeDate,
   currentTime,
 }) => {
   // Day 1 (Reference Date)
@@ -36,10 +34,10 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
   // 48h curve points (192 points = 15-minute resolution across 48h)
   const curvePoints = get48hTideCurve(selectedDate, port, 192);
 
-  // SVG dimensions
+  // SVG dimensions - Height increased for clearer vertical amplitude on mobile
   const svgWidth = 900;
-  const svgHeight = 305;
-  const padding = { top: 35, right: 30, bottom: 68, left: 45 };
+  const svgHeight = 390;
+  const padding = { top: 40, right: 28, bottom: 65, left: 45 };
 
   const chartWidth = svgWidth - padding.left - padding.right;
   const chartHeight = svgHeight - padding.top - padding.bottom;
@@ -71,67 +69,10 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
   const currentWindowFraction = (currentTs - startWindowTs) / (48 * 60 * 60 * 1000);
   const currentCursorX = scaleX(Math.max(0, Math.min(1, currentWindowFraction)));
 
-  const isViewingToday = selectedDate.toDateString() === currentTime.toDateString();
-
-  const handlePrevDay = () => {
-    const d = new Date(selectedDate);
-    d.setDate(d.getDate() - 1);
-    onChangeDate(d);
-  };
-
-  const handleNextDay = () => {
-    const d = new Date(selectedDate);
-    d.setDate(d.getDate() + 1);
-    onChangeDate(d);
-  };
-
-  const handleToday = () => {
-    onChangeDate(new Date());
-  };
-
   return (
-    <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 sm:p-5 md:p-6 shadow-xl text-slate-100 space-y-4">
-      {/* Top Bar with Date Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
-        <div className="text-xs font-mono text-slate-400">
-          Visualização Contínua de 48 Horas
-        </div>
-
-        {/* Date Selector Controls */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handlePrevDay}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700"
-            title="Dia Anterior"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          <div className="px-2.5 sm:px-3 py-1 bg-slate-950 rounded-lg border border-slate-800 text-xs font-mono font-bold text-slate-200">
-            {d1.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} ➔ {d2.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
-          </div>
-
-          <button
-            onClick={handleNextDay}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700"
-            title="Próximo Dia"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-
-          {!isViewingToday && (
-            <button
-              onClick={handleToday}
-              className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-700/50 transition"
-            >
-              Hoje
-            </button>
-          )}
-        </div>
-      </div>
-
+    <div className="bg-slate-900/90 rounded-xl sm:rounded-2xl border border-slate-800 p-2.5 sm:p-4 md:p-5 shadow-xl text-slate-100">
       {/* SVG Chart Container - Fully visible and scalable on mobile screens */}
-      <div className="relative w-full overflow-hidden select-none pt-2 bg-slate-950/40 rounded-xl border border-slate-800/60 p-1 sm:p-2">
+      <div className="relative w-full overflow-hidden select-none bg-slate-950/50 rounded-lg sm:rounded-xl border border-slate-800/70 p-1 sm:p-2">
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
           className="w-full h-auto block cursor-default"

@@ -38,6 +38,31 @@ export interface PortConfig {
   barCharacteristics: string;
 }
 
+export interface DailyForecastDay {
+  date: string; // YYYY-MM-DD
+  dayOfWeek: string; // Seg, Ter, Qua, Qui, Sex, Sáb, Dom
+  formattedDate: string; // 21 ago
+  isToday: boolean;
+  tempMax: number;
+  tempMin: number;
+  apparentTempMax: number;
+  weatherCode: number;
+  weatherDescription: string;
+  windSpeedMaxKmH: number;
+  windSpeedMaxKnots: number;
+  windGustsMaxKmH: number;
+  windGustsMaxKnots: number;
+  windDirectionDominant: number;
+  windDirectionLabel: string;
+  precipitationProb: number;
+  precipitationSum: number;
+  uvIndexMax: number;
+  waveHeightMeters: number;
+  wavePeriodSeconds: number;
+  sunrise: string;
+  sunset: string;
+}
+
 export interface WeatherData {
   temperature: number;
   apparentTemperature: number;
@@ -62,6 +87,7 @@ export interface WeatherData {
   nauticalDawn: string;
   nauticalDusk: string;
   lastUpdated: string;
+  weeklyForecast?: DailyForecastDay[];
 }
 
 export interface VesselParameters {
