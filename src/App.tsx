@@ -7,11 +7,18 @@ import { InteractiveNauticalMap } from './components/InteractiveNauticalMap';
 import { TideTableMonthly } from './components/TideTableMonthly';
 import { InformativoGenerator } from './components/InformativoGenerator';
 import { AlertSettingsModal } from './components/AlertSettingsModal';
+import { NotificationModal } from './components/NotificationModal';
 import { PORTS_DATA } from './data/portsData';
 import { PortConfig, WeatherData, AlertThresholds, CustomUserLocation } from './types/maritime';
 import { INITIAL_USER_LOCATION, decimalToDMS } from './data/vesselTrafficData';
 import { calculateCurrentTide } from './utils/tideCalculations';
 import { fetchPortWeather } from './services/weatherService';
+import {
+  getSavedNotificationPreferences,
+  saveNotificationPreferences,
+  processMaritimeNotifications,
+  NotificationPreferences,
+} from './services/notificationService';
 import { AlertTriangle, MapPin, Compass, Table, Crosshair, CloudSun, Map } from 'lucide-react';
 
 const DEFAULT_THRESHOLDS: AlertThresholds = {
@@ -29,6 +36,10 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [simulatedTime, setSimulatedTime] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
+  // Notifications State (Preamar & Hourly)
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(getSavedNotificationPreferences());
+  const [isNotifModalOpen, setIsNotifModalOpen] = useState<boolean>(false);
 
   // Custom User Location state (starts with default, attempts real GPS)
   const [userLocation, setUserLocation] = useState<CustomUserLocation>(INITIAL_USER_LOCATION);
@@ -73,13 +84,29 @@ export default function App() {
   const activePort: PortConfig = PORTS_DATA[selectedPortId];
   const effectiveTime = simulatedTime || currentTime;
 
-  // Real-time clock interval
+  // Real-time clock interval & Notification Engine
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
+      const now = new Date();
+      setCurrentTime(now);
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Current calculated tide
+  const currentTideState = calculateCurrentTide(effectiveTime, activePort);
+
+  // Check and fire scheduled push notifications every 10 seconds
+  useEffect(() => {
+    if (!simulatedTime) {
+      processMaritimeNotifications(currentTime, activePort, currentTideState, notifPrefs);
+    }
+  }, [currentTime, activePort, currentTideState, notifPrefs, simulatedTime]);
+
+  const handleSaveNotifPrefs = (newPrefs: NotificationPreferences) => {
+    setNotifPrefs(newPrefs);
+    saveNotificationPreferences(newPrefs);
+  };
 
   // Fetch weather when port or user location changes
   const loadWeather = useCallback(async () => {
@@ -99,9 +126,6 @@ export default function App() {
     const interval = setInterval(loadWeather, thresholds.autoRefreshInterval * 1000);
     return () => clearInterval(interval);
   }, [loadWeather, thresholds.autoRefreshInterval]);
-
-  // Current calculated tide
-  const currentTideState = calculateCurrentTide(effectiveTime, activePort);
 
   // Active Environmental Alerts
   const activeAlerts: string[] = [];
@@ -136,6 +160,8 @@ export default function App() {
         onChangeTab={setActiveTab}
         currentTime={currentTime}
         userLocation={userLocation}
+        notificationsEnabled={notifPrefs.enabled}
+        onOpenNotifications={() => setIsNotifModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -305,6 +331,16 @@ export default function App() {
         onClose={() => setIsAlertModalOpen(false)}
         thresholds={thresholds}
         onSaveThresholds={setThresholds}
+      />
+
+      {/* Push Notifications Modal (Preamar & Hourly) */}
+      <NotificationModal
+        isOpen={isNotifModalOpen}
+        onClose={() => setIsNotifModalOpen(false)}
+        preferences={notifPrefs}
+        onSavePreferences={handleSaveNotifPrefs}
+        port={activePort}
+        tideState={currentTideState}
       />
     </div>
   );

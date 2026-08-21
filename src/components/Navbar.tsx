@@ -1,5 +1,5 @@
 import React from 'react';
-import { Anchor, Compass, FileText, Map, Table, Waves } from 'lucide-react';
+import { Anchor, Bell, BellRing, Compass, FileText, Map, Table, Waves } from 'lucide-react';
 import { PortConfig, CustomUserLocation } from '../types/maritime';
 import { IntersalLogo } from './IntersalLogo';
 
@@ -10,6 +10,8 @@ interface NavbarProps {
   onChangeTab: (tab: 'dashboard' | 'table' | 'map' | 'report') => void;
   currentTime: Date;
   userLocation: CustomUserLocation;
+  notificationsEnabled?: boolean;
+  onOpenNotifications: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -19,11 +21,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   onChangeTab,
   currentTime,
   userLocation,
+  notificationsEnabled = false,
+  onOpenNotifications,
 }) => {
   return (
     <header className="bg-slate-900 text-slate-100 border-b border-slate-800 sticky top-0 z-40 shadow-lg">
       <div className="max-w-7xl mx-auto px-2.5 sm:px-6">
-        {/* Top Info Bar: Brand + Realtime Clock in a single compact row */}
+        {/* Top Info Bar: Brand + Realtime Clock + Notification Button in a single compact row */}
         <div className="py-2 sm:py-2.5 flex items-center justify-between gap-2 border-b border-slate-800/80">
           {/* Logo & Title */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -40,14 +44,37 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Compact Live Clock */}
-          <div className="shrink-0 font-mono bg-slate-800/80 px-2 sm:px-3 py-1 rounded-lg border border-slate-700/70 text-right shadow-sm">
-            <div className="text-[11px] sm:text-xs font-bold text-white leading-tight flex items-center justify-end gap-1">
-              <span>{currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-              <span className="text-[9px] sm:text-[10px] text-cyan-400 font-medium">BRT</span>
-            </div>
-            <div className="text-[9px] sm:text-[10px] text-slate-400 leading-tight">
-              {currentTime.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+          {/* Right Controls: Notification Action + Compact Live Clock */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Notification Bell Button */}
+            <button
+              onClick={onOpenNotifications}
+              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition shadow-sm ${
+                notificationsEnabled
+                  ? 'bg-emerald-950/80 border-emerald-500/80 text-emerald-300 hover:bg-emerald-900'
+                  : 'bg-slate-800/90 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'
+              }`}
+              title="Configurar Notificações de Preamar e Hora em Hora"
+            >
+              {notificationsEnabled ? (
+                <BellRing className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 animate-pulse" />
+              ) : (
+                <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
+              )}
+              <span className="hidden sm:inline">
+                {notificationsEnabled ? 'Alertas Ativos' : 'Notificações'}
+              </span>
+            </button>
+
+            {/* Compact Live Clock */}
+            <div className="shrink-0 font-mono bg-slate-800/80 px-2 sm:px-3 py-1 rounded-lg border border-slate-700/70 text-right shadow-sm">
+              <div className="text-[11px] sm:text-xs font-bold text-white leading-tight flex items-center justify-end gap-1">
+                <span>{currentTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                <span className="text-[9px] sm:text-[10px] text-cyan-400 font-medium">BRT</span>
+              </div>
+              <div className="text-[9px] sm:text-[10px] text-slate-400 leading-tight">
+                {currentTime.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+              </div>
             </div>
           </div>
         </div>
