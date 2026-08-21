@@ -181,70 +181,84 @@ export default function App() {
               loading={weatherLoading}
             />
 
-            {/* Quick Actions / Highlights Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div
-                onClick={() => setActiveTab('table')}
-                className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900 cursor-pointer transition shadow-lg group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wide">
-                    Tábua Oficial
-                  </span>
-                  <Table className="w-5 h-5 text-slate-500 group-hover:text-cyan-400 transition" />
+            {/* Quick Actions & Navigation Module - Grouped 2x2 Grid for compact view */}
+            <div className="bg-slate-900/90 rounded-xl sm:rounded-2xl border border-slate-800 p-2.5 sm:p-4 shadow-xl text-slate-100">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {/* 1. Tábua Oficial */}
+                <div
+                  onClick={() => setActiveTab('table')}
+                  className="p-2.5 sm:p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-slate-950 cursor-pointer transition shadow-md group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide truncate">
+                        Tábua Oficial
+                      </span>
+                      <Table className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 group-hover:text-cyan-400 shrink-0 transition" />
+                    </div>
+                    <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">DHN 2026</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 leading-snug line-clamp-2">
+                      365 dias, fases lunares, sizígias e quadraturas.
+                    </p>
+                  </div>
                 </div>
-                <h4 className="text-base font-bold text-white">DHN 2026 Mensal</h4>
-                <p className="text-xs text-slate-400 mt-1">
-                  Consulte os 365 dias do ano com fases lunares, sizígias e quadraturas da Marinha.
-                </p>
-              </div>
 
-              <div
-                onClick={() => setActiveTab('map')}
-                className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900 cursor-pointer transition shadow-lg group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wide">
-                    Carta Náutica
-                  </span>
-                  <Map className="w-5 h-5 text-slate-500 group-hover:text-cyan-400 transition" />
+                {/* 2. Carta Náutica */}
+                <div
+                  onClick={() => setActiveTab('map')}
+                  className="p-2.5 sm:p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-slate-950 cursor-pointer transition shadow-md group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide truncate">
+                        Carta Náutica
+                      </span>
+                      <Map className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 group-hover:text-cyan-400 shrink-0 transition" />
+                    </div>
+                    <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Mapa & Satélite</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 leading-snug line-clamp-2">
+                      TERMISA, Barra de Macau e GPS em tempo real.
+                    </p>
+                  </div>
                 </div>
-                <h4 className="text-base font-bold text-white">Mapa & Satélite</h4>
-                <p className="text-xs text-slate-400 mt-1">
-                  Visualize o canal de Areia Branca (TERMISA), Barra de Macau e sua posição exata.
-                </p>
-              </div>
 
-              <div
-                onClick={() => loadWeather()}
-                className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900 cursor-pointer transition shadow-lg group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wide">
-                    Meteorologia Marinha
-                  </span>
-                  <CloudSun className="w-5 h-5 text-slate-500 group-hover:text-cyan-400 transition" />
+                {/* 3. Meteorologia Marinha */}
+                <div
+                  onClick={() => loadWeather()}
+                  className="p-2.5 sm:p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-slate-950 cursor-pointer transition shadow-md group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide truncate">
+                        Meteorologia
+                      </span>
+                      <CloudSun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 group-hover:text-cyan-400 shrink-0 transition" />
+                    </div>
+                    <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Ventos & Ondas</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 leading-snug line-clamp-2">
+                      Ventos alísios, rajadas, pressão e ondas.
+                    </p>
+                  </div>
                 </div>
-                <h4 className="text-base font-bold text-white">Ventos & Ondas</h4>
-                <p className="text-xs text-slate-400 mt-1">
-                  Direção e velocidade dos ventos alísios (SE/E), rajadas, pressão atmosférica e ondas.
-                </p>
-              </div>
 
-              <div
-                onClick={() => setActiveTab('report')}
-                className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900 cursor-pointer transition shadow-lg group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wide">
-                    Despacho & Rádio
-                  </span>
-                  <Compass className="w-5 h-5 text-slate-500 group-hover:text-cyan-400 transition" />
+                {/* 4. Boletim WhatsApp */}
+                <div
+                  onClick={() => setActiveTab('report')}
+                  className="p-2.5 sm:p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-slate-950 cursor-pointer transition shadow-md group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide truncate">
+                        Informativo
+                      </span>
+                      <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 group-hover:text-cyan-400 shrink-0 transition" />
+                    </div>
+                    <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Boletim WhatsApp</h4>
+                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 leading-snug line-clamp-2">
+                      Relatório oficial com 1 clique para envio.
+                    </p>
+                  </div>
                 </div>
-                <h4 className="text-base font-bold text-white">Boletim WhatsApp / VHF</h4>
-                <p className="text-xs text-slate-400 mt-1">
-                  Gere o informativo oficial de marés, ventos e previsões com 1 clique para envio.
-                </p>
               </div>
             </div>
           </div>
