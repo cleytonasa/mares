@@ -1,18 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Info, Plus, Ship, Anchor, Lock, Unlock, Edit2, Trash2, Tag, Share2, Check } from 'lucide-react';
-import { PortConfig, TideAnnotation } from '../types/maritime';
-import { get48hTideCurve, calculateCurrentTide, getNextHighTide } from '../utils/tideCalculations';
+import React, { useState } from 'react';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PortConfig } from '../types/maritime';
+import { get48hTideCurve, calculateCurrentTide } from '../utils/tideCalculations';
 import { getTidesForDay } from '../data/tideData2026';
-import { AnnotationModal } from './AnnotationModal';
-import { OperatorPinModal } from './OperatorPinModal';
-import {
-  getSavedAnnotations,
-  saveAnnotationsToStorage,
-  isOperatorAuthorizedSession,
-  setOperatorAuthorizedSession,
-  generateShareableFleetUrl,
-} from '../services/annotationService';
-import { parseBargeDateTime, formatBargeTime, formatBargeDate } from '../utils/dateUtils';
 
 interface TideChart48hProps {
   port: PortConfig;
@@ -29,114 +19,6 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
   currentTime,
   onSelectTime,
 }) => {
-  const [annotations, setAnnotations] = useState<TideAnnotation[]>([]);
-  const [isOperator, setIsOperator] = useState<boolean>(false);
-  const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
-  const [isAnnotationModalOpen, setIsAnnotationModalOpen] = useState<boolean>(false);
-  const [editingAnnotation, setEditingAnnotation] = useState<TideAnnotation | null>(null);
-  const [modalTargetDate, setModalTargetDate] = useState<Date>(new Date());
-  const [copiedLink, setCopiedLink] = useState<boolean>(false);
-
-  const [hoveredAnnotation, setHoveredAnnotation] = useState<{
-    annotation: TideAnnotation;
-    height: number;
-    depth: number;
-    x: number;
-    y: number;
-  } | null>(null);
-
-  // Load annotations & session auth on mount and listen to updates
-  useEffect(() => {
-    const refreshData = () => {
-      setAnnotations(getSavedAnnotations());
-      setIsOperator(isOperatorAuthorizedSession());
-    };
-    refreshData();
-
-    window.addEventListener('tide_annotations_updated', refreshData);
-    window.addEventListener('storage', refreshData);
-    return () => {
-      window.removeEventListener('tide_annotations_updated', refreshData);
-      window.removeEventListener('storage', refreshData);
-    };
-  }, []);
-
-  const handleSaveAnnotation = (
-    data: Omit<TideAnnotation, 'id' | 'createdAt'>,
-    editingId?: string
-  ) => {
-    let updated: TideAnnotation[];
-    if (editingId) {
-      updated = annotations.map((a) =>
-        a.id === editingId ? { ...a, ...data } : a
-      );
-    } else {
-      const newAnn: TideAnnotation = {
-        ...data,
-        id: `ann-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        createdAt: new Date().toISOString(),
-      };
-      updated = [...annotations, newAnn];
-    }
-    setAnnotations(updated);
-    saveAnnotationsToStorage(updated);
-  };
-
-  const handleDeleteAnnotation = (id: string) => {
-    const updated = annotations.filter((a) => a.id !== id);
-    setAnnotations(updated);
-    saveAnnotationsToStorage(updated);
-  };
-
-  const handleClearAllAnnotations = () => {
-    if (!isOperator) {
-      setIsPinModalOpen(true);
-      return;
-    }
-    if (window.confirm('Deseja realmente excluir TODAS as marcações de barcaças? Esta ação não pode ser desfeita.')) {
-      setAnnotations([]);
-      saveAnnotationsToStorage([]);
-    }
-  };
-
-  const handleCopyShareLink = () => {
-    const shareUrl = generateShareableFleetUrl(annotations);
-    if (shareUrl) {
-      navigator.clipboard.writeText(shareUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 3000);
-    }
-  };
-
-  const handleOpenAddModal = (initialDate?: Date) => {
-    if (!isOperator) {
-      setIsPinModalOpen(true);
-      return;
-    }
-    setEditingAnnotation(null);
-    setModalTargetDate(initialDate || new Date());
-    setIsAnnotationModalOpen(true);
-  };
-
-  const handleEditAnnotation = (ann: TideAnnotation) => {
-    if (!isOperator) {
-      setIsPinModalOpen(true);
-      return;
-    }
-    setEditingAnnotation(ann);
-    setModalTargetDate(parseBargeDateTime(ann.dateTime));
-    setIsAnnotationModalOpen(true);
-  };
-
-  const handleToggleOperatorAuth = () => {
-    if (isOperator) {
-      setOperatorAuthorizedSession(false);
-      setIsOperator(false);
-    } else {
-      setIsPinModalOpen(true);
-    }
-  };
-
   // Day 1 (Reference Date)
   const d1 = new Date(selectedDate);
   const year1 = d1.getFullYear();
@@ -192,30 +74,6 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
 
   const isViewingToday = selectedDate.toDateString() === currentTime.toDateString();
 
-  // Filter annotations relevant to this port & currently viewed 48h window
-  const windowAnnotations = annotations
-    .filter((a) => a.portId === port.id)
-    .map((a) => {
-      const aDate = parseBargeDateTime(a.dateTime);
-      const aTs = aDate.getTime();
-      const fraction = (aTs - startWindowTs) / (48 * 60 * 60 * 1000);
-      const inWindow = fraction >= 0 && fraction <= 1;
-      const x = scaleX(fraction);
-      const calculated = calculateCurrentTide(aDate, port);
-      const y = scaleY(calculated.currentHeight);
-      return {
-        annotation: a,
-        date: aDate,
-        inWindow,
-        fraction,
-        x,
-        y,
-        height: calculated.currentHeight,
-        depth: calculated.currentWaterDepth,
-      };
-    })
-    .filter((a) => a.inWindow);
-
   const handlePrevDay = () => {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() - 1);
@@ -245,73 +103,17 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
 
   return (
     <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 sm:p-5 md:p-6 shadow-xl text-slate-100 space-y-4">
-      {/* Top Bar with Date Navigation & Operator Status */}
+      {/* Top Bar with Date Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-bold tracking-wider text-cyan-400 uppercase flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            Curva Harmônica de Variação (48 Horas)
+            Curva Harmônica de Variação de Marés (48 Horas)
           </h3>
-
-          {/* Operator Mode Badge / Toggle */}
-          <button
-            onClick={handleToggleOperatorAuth}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition ${
-              isOperator
-                ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300 hover:bg-emerald-900'
-                : 'bg-slate-950 border-slate-700 text-slate-400 hover:text-slate-200'
-            }`}
-            title={isOperator ? 'Modo Operador Ativo (Clique para bloquear)' : 'Acesso Restrito: Modo Somente Leitura'}
-          >
-            {isOperator ? (
-              <>
-                <Unlock className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Modo Operador</span>
-              </>
-            ) : (
-              <>
-                <Lock className="w-3.5 h-3.5 text-slate-500" />
-                <span>Somente Leitura</span>
-              </>
-            )}
-          </button>
         </div>
 
-        {/* Date Selector & Add Marker Action Controls */}
+        {/* Date Selector Controls */}
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleCopyShareLink}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition ${
-              copiedLink
-                ? 'bg-cyan-950 text-cyan-300 border-cyan-500'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-            }`}
-            title="Copiar Link da Programação Completa para Acesso Externo"
-          >
-            {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-cyan-400" />}
-            <span>{copiedLink ? 'Link Copiado!' : 'Copiar Link c/ Barcaças'}</span>
-          </button>
-
-          <button
-            onClick={() => handleOpenAddModal()}
-            className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-cyan-600/30 transition"
-            title="Adicionar Marcação de Barcaça / Manobra no Gráfico"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Adicionar Barcaça / Evento</span>
-          </button>
-
-          {isOperator && annotations.length > 0 && (
-            <button
-              onClick={handleClearAllAnnotations}
-              className="px-2.5 py-1 bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800/80 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"
-              title="Excluir todas as marcações de barcaças do sistema"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Limpar Todas</span>
-            </button>
-          )}
-
           <button
             onClick={handlePrevDay}
             className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition border border-slate-700"
@@ -347,10 +149,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
       <div className="relative w-full overflow-hidden select-none pt-2 bg-slate-950/40 rounded-xl border border-slate-800/60 p-1 sm:p-2">
         <svg
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          className="w-full h-auto block cursor-default"
-          onMouseLeave={() => {
-            setHoveredAnnotation(null);
-          }}
+          className="w-full h-auto block cursor-pointer"
           onClick={handleSvgClick}
         >
           <defs>
@@ -401,12 +200,11 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             strokeWidth="1.5"
           />
 
-          {/* Y Axis ticks & labels (without horizontal grid lines across chart) */}
+          {/* Y Axis ticks & labels */}
           {[0, 1, 2, 3, 4].map((level) => {
             const y = scaleY(level);
             return (
               <g key={level}>
-                {/* Small tick mark on Y axis */}
                 <line
                   x1={padding.left - 4}
                   y1={y}
@@ -596,69 +394,6 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             );
           })}
 
-          {/* OPERATIONAL BARGE / SHIP ANNOTATIONS ON CHART (CLEAN, MINIMAL NAUTICAL PINS) */}
-          {windowAnnotations.map((item) => {
-            const itemColor = item.annotation.color || '#38bdf8';
-            const isHovered = hoveredAnnotation?.annotation.id === item.annotation.id;
-            const markerY = item.y;
-            const pinY = padding.top - 8;
-
-            return (
-              <g
-                key={item.annotation.id}
-                className="cursor-pointer group"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEditAnnotation(item.annotation);
-                }}
-                onMouseEnter={() => setHoveredAnnotation(item)}
-                onMouseLeave={() => setHoveredAnnotation(null)}
-              >
-                {/* Vertical Line */}
-                <line
-                  x1={item.x}
-                  y1={pinY}
-                  x2={item.x}
-                  y2={svgHeight - padding.bottom}
-                  stroke={itemColor}
-                  strokeWidth={isHovered ? 2.5 : 1.5}
-                  strokeDasharray="3 3"
-                  opacity={isHovered ? 1 : 0.85}
-                />
-
-                {/* Minimal Boat Icon Circular Pin at top (No bulky overlapping rectangles) */}
-                <circle
-                  cx={item.x}
-                  cy={pinY}
-                  r={isHovered ? 12 : 10}
-                  fill="#020617"
-                  stroke={itemColor}
-                  strokeWidth={isHovered ? 2.2 : 1.5}
-                />
-                <text
-                  x={item.x}
-                  y={pinY + 4}
-                  fontSize={isHovered ? '11' : '10'}
-                  textAnchor="middle"
-                  style={{ userSelect: 'none' }}
-                >
-                  {item.annotation.category === 'barcaca' ? '⛴️' : item.annotation.category === 'navio' ? '🚢' : '⚓'}
-                </text>
-
-                {/* Water surface contact circle marker */}
-                <circle
-                  cx={item.x}
-                  cy={markerY}
-                  r={isHovered ? 6.5 : 5}
-                  fill={itemColor}
-                  stroke="#ffffff"
-                  strokeWidth="2"
-                  className="transition-transform duration-200"
-                />
-              </g>
-            );
-          })}
-
           {/* Real-time Current Position Marker (AGORA) */}
           {isCurrentTimeInWindow && (
             <g>
@@ -704,203 +439,7 @@ export const TideChart24h: React.FC<TideChart48hProps> = ({
             </g>
           )}
         </svg>
-
-        {/* Hover Tooltip for Operational Barge Annotations */}
-        {hoveredAnnotation && (
-          <div
-            className="absolute z-30 pointer-events-none bg-slate-950 border border-cyan-400 p-3 rounded-xl shadow-2xl text-xs font-sans text-slate-100 backdrop-blur max-w-xs"
-            style={{
-              left: `${Math.min(70, Math.max(5, (hoveredAnnotation.x / svgWidth) * 100))}%`,
-              top: '20px',
-            }}
-          >
-            <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5">
-              <span className="font-bold text-sm text-cyan-300 flex items-center gap-1.5">
-                {hoveredAnnotation.annotation.category === 'barcaca' ? '⛴️' : '🚢'} {hoveredAnnotation.annotation.title}
-              </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-200 border border-cyan-800">
-                {formatBargeTime(hoveredAnnotation.annotation.dateTime)} BRT
-              </span>
-            </div>
-
-            {hoveredAnnotation.annotation.bargeStatus && (
-              <div className="mt-1.5 text-[11px] font-medium flex items-center gap-1.5">
-                <span className="text-slate-400">Status:</span>
-                <span className={`font-semibold ${
-                  hoveredAnnotation.annotation.bargeStatus === 'Finalizada'
-                    ? 'text-emerald-300'
-                    : hoveredAnnotation.annotation.bargeStatus === 'Operação de Descarga'
-                    ? 'text-purple-300'
-                    : 'text-rose-300'
-                }`}>
-                  {hoveredAnnotation.annotation.bargeStatus === 'Finalizada' && '🟢 '}
-                  {hoveredAnnotation.annotation.bargeStatus === 'Operação de Descarga' && '🟣 '}
-                  {hoveredAnnotation.annotation.bargeStatus === 'No largo / Aguardando' && '🔴 '}
-                  {hoveredAnnotation.annotation.bargeStatus}
-                </span>
-              </div>
-            )}
-
-            {(() => {
-              const annDate = parseBargeDateTime(hoveredAnnotation.annotation.dateTime);
-              const nextHigh = getNextHighTide(annDate, port);
-              return (
-                <div className="mt-1.5 flex justify-between items-center gap-2 text-[11px] font-mono bg-slate-900/90 px-2 py-1 rounded-lg border border-slate-800">
-                  <span className="text-slate-400">Próxima Preamar:</span>
-                  <span className="text-emerald-300 font-bold flex items-center gap-1">
-                    <span>🔼 {nextHigh.timeStr}</span>
-                    <span className="text-cyan-300">({nextHigh.height.toFixed(2)}m)</span>
-                  </span>
-                </div>
-              );
-            })()}
-
-            {hoveredAnnotation.annotation.notes && (
-              <div className="mt-2 pt-1.5 border-t border-slate-800/80 text-[11px] text-slate-300 italic">
-                "{hoveredAnnotation.annotation.notes}"
-              </div>
-            )}
-
-            <div className="mt-2 text-[10px] text-slate-500 text-right">
-              {isOperator ? 'Clique no marcador para editar/excluir' : 'Modo visualização'}
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* Operational Barge Schedule List Section below the Chart */}
-      <div className="pt-2">
-        <div className="flex items-center justify-between mb-2.5">
-          <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-            <Ship className="w-4 h-4 text-cyan-400" />
-            Programação Operacional das Barcaças & Eventos ({windowAnnotations.length} ativos nas 48h)
-          </h4>
-          {isOperator && (
-            <button
-              onClick={() => handleOpenAddModal()}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 transition"
-            >
-              <Plus className="w-3.5 h-3.5" /> Nova Barcaça
-            </button>
-          )}
-        </div>
-
-        {windowAnnotations.length === 0 ? (
-          <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-400">
-            Nenhuma marcação de barcaça ou manobra registrada nesta janela de 48h.{' '}
-            {isOperator && (
-              <button
-                onClick={() => handleOpenAddModal()}
-                className="text-cyan-400 underline font-semibold hover:text-cyan-300 ml-1"
-              >
-                Clique para adicionar
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-            {windowAnnotations.map((item) => {
-              const dt = parseBargeDateTime(item.annotation.dateTime);
-              const timeDisplay = formatBargeTime(item.annotation.dateTime);
-              const dateDisplay = dt.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
-              const itemColor = item.annotation.color || '#38bdf8';
-              const nextHigh = getNextHighTide(dt, port);
-
-              return (
-                <div
-                  key={item.annotation.id}
-                  className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-cyan-500/40 transition flex items-start justify-between gap-2 shadow"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: itemColor }} />
-                      <span className="text-xs font-bold text-white flex items-center gap-1">
-                        {item.annotation.category === 'barcaca' ? '⛴️' : '🚢'} {item.annotation.title}
-                      </span>
-                    </div>
-
-                    <div className="text-[11px] text-cyan-300 font-mono flex flex-wrap items-center gap-1.5">
-                      <span>🕒 {timeDisplay} BRT</span>
-                      <span>•</span>
-                      <span className="text-emerald-300 font-semibold flex items-center gap-1">
-                        <span>Preamar:</span>
-                        <span>🔼 {nextHigh.timeStr}</span>
-                        <span>({nextHigh.height.toFixed(2)}m)</span>
-                      </span>
-                    </div>
-
-                    {item.annotation.bargeStatus && (
-                      <div className="pt-0.5">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
-                            item.annotation.bargeStatus === 'Finalizada'
-                              ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60'
-                              : item.annotation.bargeStatus === 'Operação de Descarga'
-                              ? 'bg-purple-950/80 text-purple-300 border-purple-700/60'
-                              : 'bg-rose-950/80 text-rose-300 border-rose-700/60'
-                          }`}
-                        >
-                          {item.annotation.bargeStatus === 'Finalizada' && '🟢 '}
-                          {item.annotation.bargeStatus === 'Operação de Descarga' && '🟣 '}
-                          {item.annotation.bargeStatus === 'No largo / Aguardando' && '🔴 '}
-                          {item.annotation.bargeStatus}
-                        </span>
-                      </div>
-                    )}
-
-                    {item.annotation.notes && (
-                      <div className="text-[10px] text-slate-400 line-clamp-1 italic">
-                        "{item.annotation.notes}"
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions for authorized operators */}
-                  {isOperator && (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => handleEditAnnotation(item.annotation)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAnnotation(item.annotation.id)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition"
-                        title="Excluir"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Annotation Creation / Edit Modal */}
-      <AnnotationModal
-        isOpen={isAnnotationModalOpen}
-        onClose={() => setIsAnnotationModalOpen(false)}
-        onSave={handleSaveAnnotation}
-        onDelete={handleDeleteAnnotation}
-        editingAnnotation={editingAnnotation}
-        selectedDateTime={modalTargetDate}
-        portId={port.id}
-      />
-
-      {/* Security PIN Authorization Modal */}
-      <OperatorPinModal
-        isOpen={isPinModalOpen}
-        onClose={() => setIsPinModalOpen(false)}
-        onSuccess={() => {
-          setOperatorAuthorizedSession(true);
-          setIsOperator(true);
-        }}
-      />
     </div>
   );
 };
