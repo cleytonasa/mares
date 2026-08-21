@@ -1,9 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  Navigation,
   Crosshair,
+  Locate,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { PortConfig, CustomUserLocation } from '../types/maritime';
 import { CurrentTideState } from '../utils/tideCalculations';
@@ -28,6 +30,70 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [mapType, setMapType] = useState<'satellite' | 'nautical'>('nautical');
   const [showRangeRings, setShowRangeRings] = useState<boolean>(true);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [isRealGps, setIsRealGps] = useState<boolean>(false);
+
+  // Request Real Device GPS Location
+  const requestDeviceLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGpsError('Geolocalização não suportada neste navegador.');
+      return;
+    }
+
+    setIsLocating(true);
+    setGpsError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = Number(position.coords.latitude.toFixed(6));
+        const lng = Number(position.coords.longitude.toFixed(6));
+        const dmsLat = decimalToDMS(lat, true);
+        const dmsLng = decimalToDMS(lng, false);
+        const accuracy = Math.round(position.coords.accuracy || 0);
+
+        const realLocation: CustomUserLocation = {
+          lat,
+          lng,
+          name: `Localização Real do Dispositivo (±${accuracy}m)`,
+          dmsLat,
+          dmsLng,
+          isManual: false,
+          estimatedBaseZHDepth: 4.0,
+        };
+
+        onUpdateUserLocation(realLocation);
+        setIsRealGps(true);
+        setIsLocating(false);
+
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.setView([lat, lng], 15);
+        }
+      },
+      (error) => {
+        setIsLocating(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setGpsError('Permissão de GPS negada. Ative a localização no navegador/celular.');
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          setGpsError('Sinal de GPS indisponível no momento.');
+        } else {
+          setGpsError('Tempo limite ao obter localização.');
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 10000,
+      }
+    );
+  }, [onUpdateUserLocation]);
+
+  // Request GPS automatically when opening map
+  useEffect(() => {
+    if (!isRealGps && !userLocation.isManual) {
+      requestDeviceLocation();
+    }
+  }, []);
 
   // Initialize Map Once
   useEffect(() => {
@@ -36,7 +102,7 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
     if (!mapInstanceRef.current) {
       const map = L.map(mapContainerRef.current, {
         center: [userLocation.lat, userLocation.lng],
-        zoom: 12,
+        zoom: 13,
         zoomControl: false,
       });
 
@@ -58,6 +124,7 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
           isManual: true,
           estimatedBaseZHDepth: 4.5,
         });
+        setIsRealGps(false);
       });
 
       mapInstanceRef.current = map;
@@ -159,39 +226,50 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
       [-4.82236, -37.04381],
       termisaOffshoreCoords,
     ];
+
     L.polyline(areiaBrancaChannel, {
-      color: '#22d3ee',
+      color: '#06b6d4',
       weight: 3,
-      dashArray: '6 6',
-      opacity: 0.9,
+      dashArray: '6, 8',
+      opacity: 0.85,
     }).addTo(map);
 
-    // Macau Features
+    // Critical Shallow Bank Polygon (Ponta do Upanema)
+    const shallowBankCoords: [number, number][] = [
+      [-4.905, -37.145],
+      [-4.920, -37.125],
+      [-4.928, -37.132],
+      [-4.915, -37.155],
+    ];
+
+    L.polygon(shallowBankCoords, {
+      color: '#f59e0b',
+      fillColor: '#f59e0b',
+      fillOpacity: 0.25,
+      weight: 2,
+      dashArray: '4, 4',
+    }).addTo(map).bindPopup(`
+      <div style="font-family: sans-serif; color: #0f172a; padding: 4px;">
+        <h4 style="margin: 0; font-weight: bold; color: #d97706;">Banco Crítico de Areia</h4>
+        <p style="margin: 2px 0 0 0; font-size: 11px;">Restrição de calado em maré de sizígia baixa.</p>
+      </div>
+    `);
+
+    // Macau Marker
     L.marker(macauBarraCoords, {
-      icon: createPOI_Icon('#06b6d4', '🌊', 'Barra de Macau (Rio Açu)'),
-    }).addTo(map);
+      icon: createPOI_Icon('#06b6d4', '🧭', 'Barra de Macau (Rio Açu)'),
+    }).addTo(map).bindPopup(`
+      <div style="font-family: sans-serif; color: #0f172a; padding: 4px;">
+        <h4 style="margin: 0; font-weight: bold; color: #0891b2;">Barra de Macau</h4>
+        <p style="margin: 4px 0 0 0; font-size: 12px;">Profundidade crítica no ZH: 1.8 metros</p>
+      </div>
+    `);
 
-    L.circle(pontaUpanemaCoords, {
-      radius: 1200,
-      color: '#f59e0b',
-      fillColor: '#f59e0b',
-      fillOpacity: 0.2,
-      weight: 1.5,
-    }).addTo(map);
-
-    L.circle(macauBarraCoords, {
-      radius: 1500,
-      color: '#f59e0b',
-      fillColor: '#f59e0b',
-      fillOpacity: 0.2,
-      weight: 1.5,
-    }).addTo(map);
-
-    // 3. User's Manual Position (Beacon with Pulse)
+    // User / Device Location Marker (Pulsing Circle)
     const userMarkerIcon = L.divIcon({
-      className: 'user-beacon-marker',
+      className: 'custom-user-marker',
       html: `
-        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;">
+        <div style="position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
           <div style="position: absolute; width: 36px; height: 36px; border-radius: 50%; background: rgba(6, 182, 212, 0.4); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
           <div style="position: absolute; width: 22px; height: 22px; border-radius: 50%; background: #06b6d4; border: 3px solid #ffffff; box-shadow: 0 0 15px #06b6d4; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px; font-weight: bold;">
             📍
@@ -218,12 +296,13 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
       onUpdateUserLocation({
         lat,
         lng,
-        name: `Posição Arrastada (${dmsLat})`,
+        name: `Posição Marcada (${dmsLat})`,
         dmsLat,
         dmsLng,
         isManual: true,
         estimatedBaseZHDepth: 4.5,
       });
+      setIsRealGps(false);
     });
 
     userMarker.bindPopup(`
@@ -276,33 +355,40 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
   }, [port, mapType, userLocation, showRangeRings, tideState.currentHeight]);
 
   return (
-    <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-5 md:p-6 shadow-xl text-slate-100 space-y-4">
-      {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold tracking-wide text-cyan-400 uppercase flex items-center gap-2">
-              <Navigation className="w-4 h-4" />
-              Carta Náutica & Posicionamento Georreferenciado
-            </h3>
-            {userLocation.isManual && (
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700">
-                POSIÇÃO MANUAL ATIVA
-              </span>
+    <div className="bg-slate-900/90 rounded-xl sm:rounded-2xl border border-slate-800 p-2.5 sm:p-5 shadow-xl text-slate-100 space-y-3">
+      {/* Top Action Bar */}
+      <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-800">
+        {/* GPS Status / Current Coords */}
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            onClick={requestDeviceLocation}
+            disabled={isLocating}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border ${
+              isRealGps
+                ? 'bg-emerald-950/80 border-emerald-500/80 text-emerald-300 shadow-sm shadow-emerald-950'
+                : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+            }`}
+            title="Obter localização real via GPS do celular/dispositivo"
+          >
+            {isLocating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+            ) : (
+              <Locate className={`w-3.5 h-3.5 ${isRealGps ? 'text-emerald-400' : 'text-cyan-400'}`} />
             )}
-          </div>
-          <p className="text-xs text-slate-400 mt-0.5 font-mono">
-            Sua Posição: <strong className="text-white">{userLocation.dmsLat} {userLocation.dmsLng}</strong> ({userLocation.name})
-          </p>
+            <span>{isLocating ? 'Buscando GPS...' : isRealGps ? 'GPS em Tempo Real' : 'Ativar GPS Real'}</span>
+          </button>
+
+          <span className="text-xs font-mono text-slate-300 truncate hidden xs:inline">
+            {userLocation.dmsLat} {userLocation.dmsLng}
+          </span>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Map Layer Switcher */}
-          <div className="flex items-center p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs">
+        {/* Map Controls */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center p-0.5 sm:p-1 bg-slate-950 rounded-lg border border-slate-800 text-[11px] sm:text-xs">
             <button
               onClick={() => setMapType('satellite')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition ${
+              className={`px-2 py-1 rounded-md font-medium transition ${
                 mapType === 'satellite' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -310,7 +396,7 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
             </button>
             <button
               onClick={() => setMapType('nautical')}
-              className={`px-2.5 py-1 rounded-lg font-medium transition ${
+              className={`px-2 py-1 rounded-md font-medium transition ${
                 mapType === 'nautical' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -320,44 +406,49 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
         </div>
       </div>
 
+      {/* GPS Error alert if any */}
+      {gpsError && (
+        <div className="p-2 bg-amber-950/60 border border-amber-500/50 rounded-lg flex items-center gap-2 text-xs text-amber-200">
+          <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>{gpsError}</span>
+        </div>
+      )}
+
       {/* Map Canvas */}
-      <div className="relative w-full h-[480px] rounded-2xl overflow-hidden border border-slate-800 shadow-inner bg-slate-950">
+      <div className="relative w-full h-[460px] sm:h-[520px] rounded-xl sm:rounded-2xl overflow-hidden border border-slate-800 shadow-inner bg-slate-950">
         <div ref={mapContainerRef} className="w-full h-full z-0" />
 
         {/* Live Depth Overlay Card in Top-Left */}
-        <div className="absolute top-4 left-4 z-10 bg-slate-950/90 border border-slate-700/80 p-3 rounded-xl shadow-2xl backdrop-blur text-xs font-mono text-slate-200 pointer-events-auto">
+        <div className="absolute top-3 left-3 z-10 bg-slate-950/90 border border-slate-700/80 p-2.5 sm:p-3 rounded-xl shadow-2xl backdrop-blur text-xs font-mono text-slate-200 pointer-events-auto">
           <span className="text-[10px] uppercase text-cyan-400 font-bold block">
-            Monitoramento no Seu Ponto
+            {isRealGps ? 'Localização Real do Dispositivo' : 'Posição no Mapa'}
           </span>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-xl font-bold text-white">
+          <div className="mt-0.5 flex items-baseline gap-2">
+            <span className="text-lg sm:text-xl font-bold text-white">
               {(userLocation.estimatedBaseZHDepth + tideState.currentHeight).toFixed(2)} m
             </span>
-            <span className="text-[11px] text-slate-400">lâmina total</span>
+            <span className="text-[10px] sm:text-[11px] text-slate-400">lâmina total</span>
           </div>
-          <div className="text-[10px] text-slate-400 mt-0.5">
-            Maré: +{tideState.currentHeight.toFixed(2)}m • Fundo ZH: {userLocation.estimatedBaseZHDepth}m
-          </div>
-          <div className="text-[9px] text-cyan-300 mt-1 font-sans">
-            💡 Dica: Clique no mapa para mover seu ponto
+          <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
+            {userLocation.dmsLat} {userLocation.dmsLng}
           </div>
         </div>
 
         {/* Map Rings Toggle Overlay in Top-Right */}
-        <div className="absolute top-4 right-4 z-10 flex flex-col gap-1.5 bg-slate-950/90 border border-slate-700 p-2 rounded-xl text-xs font-mono backdrop-blur">
-          <label className="flex items-center gap-2 cursor-pointer text-[11px] text-slate-300 hover:text-white">
+        <div className="absolute top-3 right-3 z-10 flex flex-col gap-1 bg-slate-950/90 border border-slate-700 p-1.5 sm:p-2 rounded-xl text-xs font-mono backdrop-blur">
+          <label className="flex items-center gap-1.5 cursor-pointer text-[10px] sm:text-[11px] text-slate-300 hover:text-white">
             <input
               type="checkbox"
               checked={showRangeRings}
               onChange={(e) => setShowRangeRings(e.target.checked)}
               className="accent-cyan-500 rounded"
             />
-            <span>Anéis de Alcance (1, 3, 5 NM)</span>
+            <span>Anéis (1, 3, 5 NM)</span>
           </label>
         </div>
 
         {/* Quick Port Focus Buttons in Bottom-Left */}
-        <div className="absolute bottom-4 left-4 z-10 flex gap-2 flex-wrap">
+        <div className="absolute bottom-3 left-3 right-3 sm:right-auto z-10 flex gap-1.5 flex-wrap">
           <button
             onClick={() => {
               onSelectPort('areia_branca');
@@ -365,13 +456,13 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
                 mapInstanceRef.current.setView([-4.825, -37.040], 12);
               }
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-lg backdrop-blur transition border ${
+            className={`px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold shadow-lg backdrop-blur transition border ${
               port.id === 'areia_branca'
                 ? 'bg-cyan-600 text-white border-cyan-400'
                 : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
             }`}
           >
-            Focar Areia Branca (TERMISA)
+            Focar TERMISA
           </button>
           <button
             onClick={() => {
@@ -380,55 +471,53 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
                 mapInstanceRef.current.setView([-5.0683, -36.6342], 12);
               }
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-lg backdrop-blur transition border ${
+            className={`px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold shadow-lg backdrop-blur transition border ${
               port.id === 'macau'
                 ? 'bg-cyan-600 text-white border-cyan-400'
                 : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
             }`}
           >
-            Focar Macau - RN
+            Focar Macau
           </button>
           <button
             onClick={() => {
-              if (mapInstanceRef.current) {
-                mapInstanceRef.current.setView([userLocation.lat, userLocation.lng], 14);
+              if (isRealGps && mapInstanceRef.current) {
+                mapInstanceRef.current.setView([userLocation.lat, userLocation.lng], 15);
+              } else {
+                requestDeviceLocation();
               }
             }}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold shadow-lg backdrop-blur transition border bg-slate-900/90 text-cyan-300 border-cyan-500/50 hover:bg-slate-800 flex items-center gap-1"
+            className="px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold shadow-lg backdrop-blur transition border bg-slate-900/90 text-cyan-300 border-cyan-500/50 hover:bg-slate-800 flex items-center gap-1"
           >
-            <Crosshair className="w-3.5 h-3.5" />
+            <Crosshair className="w-3.5 h-3.5 text-cyan-400" />
             Minha Posição
           </button>
         </div>
       </div>
 
       {/* Map Legend */}
-      <div className="p-3.5 bg-slate-950/70 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300">
-        <div className="flex items-center gap-4 flex-wrap">
+      <div className="p-2.5 sm:p-3 bg-slate-950/70 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs text-slate-300">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-cyan-500 border border-white inline-block shadow-sm" />
-            Minha Posição / Marcador
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 border border-white inline-block shadow-sm" />
+            Sua Posição
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block" />
-            TERMISA (Ilha Salineira)
+            <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" />
+            TERMISA (Ilha)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" />
-            Banco Crítico / Barra da Ponta do Upanema
+            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+            Ponta do Upanema
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
-            Barra de Macau (Rio Açu)
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 border-b-2 border-cyan-400 border-dashed inline-block w-4" />
-            Canal de Navegação Balizado
+            <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block" />
+            Barra de Macau
           </span>
         </div>
 
-        <span className="text-slate-500 font-mono text-[11px]">
-          WGS84 / Coordenadas Náuticas em Graus, Minutos e Segundos
+        <span className="text-slate-500 font-mono text-[10px]">
+          WGS84 • GPS em Tempo Real
         </span>
       </div>
     </div>

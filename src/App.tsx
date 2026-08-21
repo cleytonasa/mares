@@ -9,7 +9,7 @@ import { InformativoGenerator } from './components/InformativoGenerator';
 import { AlertSettingsModal } from './components/AlertSettingsModal';
 import { PORTS_DATA } from './data/portsData';
 import { PortConfig, WeatherData, AlertThresholds, CustomUserLocation } from './types/maritime';
-import { INITIAL_USER_LOCATION } from './data/vesselTrafficData';
+import { INITIAL_USER_LOCATION, decimalToDMS } from './data/vesselTrafficData';
 import { calculateCurrentTide } from './utils/tideCalculations';
 import { fetchPortWeather } from './services/weatherService';
 import { AlertTriangle, MapPin, Compass, Table, Crosshair, CloudSun, Map } from 'lucide-react';
@@ -30,8 +30,37 @@ export default function App() {
   const [simulatedTime, setSimulatedTime] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  // Custom User Location state (fixed reference standard)
+  // Custom User Location state (starts with default, attempts real GPS)
   const [userLocation, setUserLocation] = useState<CustomUserLocation>(INITIAL_USER_LOCATION);
+
+  // Attempt real device GPS location on load
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = Number(pos.coords.latitude.toFixed(6));
+          const lng = Number(pos.coords.longitude.toFixed(6));
+          const dmsLat = decimalToDMS(lat, true);
+          const dmsLng = decimalToDMS(lng, false);
+          const accuracy = Math.round(pos.coords.accuracy || 0);
+
+          setUserLocation({
+            lat,
+            lng,
+            name: `Localização Real do Dispositivo (±${accuracy}m)`,
+            dmsLat,
+            dmsLng,
+            isManual: false,
+            estimatedBaseZHDepth: 4.0,
+          });
+        },
+        () => {
+          // Keep default if permission denied or unavailable
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+  }, []);
 
   // Weather state
   const [weather, setWeather] = useState<WeatherData | null>(null);
