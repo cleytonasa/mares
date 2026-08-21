@@ -1,12 +1,18 @@
 // Intersal Service Worker for PWA and Push Notifications
-const CACHE_NAME = 'intersal-maritime-v1';
+const CACHE_NAME = 'intersal-maritime-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
 // Handle push notification clicks (opens or focuses app)
