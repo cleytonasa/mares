@@ -1,8 +1,10 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/$USER/public_html/mares
+    - export DEPLOYPATH=${DEPLOYPATH:-/home/$USER/public_html/mares}
     - /bin/mkdir -p $DEPLOYPATH
-    - /bin/cp -r production/* $DEPLOYPATH/
-    - /bin/cp -f production/.htaccess $DEPLOYPATH/.htaccess
+    - /bin/rm -rf $DEPLOYPATH/assets
+    - /bin/cp -rf production/* $DEPLOYPATH/
+    - /bin/cp -f production/.htaccess $DEPLOYPATH/.htaccess 2>/dev/null || true
+    - /bin/echo "Deploy concluído com sucesso em $DEPLOYPATH"
 

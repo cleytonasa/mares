@@ -191,7 +191,6 @@ export default function App() {
               weather={weather}
               isSimulated={Boolean(simulatedTime)}
               onResetSimulation={handleResetSimulation}
-              onSelectShipmentsTab={() => setActiveTab('shipments')}
             />
 
             {/* 2. 48h Harmonic Variation Curve (Curva Harmônica de Variação - 48 Horas) */}
