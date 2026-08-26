@@ -28,13 +28,23 @@ export interface MonthlySaltSummary {
   shortMonth: string;
   year: number;
   vesselCount: number;
+  concludedCount?: number;
+  operatingCount?: number;
+  plannedCount?: number;
+  concludedTotalVolume: number;
+  concludedScTotal: number;
+  concludedSqTotal: number;
   scTotal: number;
   sqTotal: number;
   totalVolume: number;
   salinorVolume: number;
   sdbVolume: number;
+  salinorConcludedVolume?: number;
+  sdbConcludedVolume?: number;
   expVolume: number;
   cbtVolume: number;
+  expConcludedVolume?: number;
+  cbtConcludedVolume?: number;
 }
 
 export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
@@ -742,13 +752,23 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Jan',
     year: 2026,
     vesselCount: 4,
+    concludedCount: 4,
+    operatingCount: 0,
+    plannedCount: 0,
+    concludedTotalVolume: 132830,
+    concludedScTotal: 109930,
+    concludedSqTotal: 22900,
     scTotal: 109930,
     sqTotal: 22900,
     totalVolume: 132830,
     salinorVolume: 132830,
     sdbVolume: 0,
+    salinorConcludedVolume: 132830,
+    sdbConcludedVolume: 0,
     expVolume: 73100,
     cbtVolume: 59730,
+    expConcludedVolume: 73100,
+    cbtConcludedVolume: 59730,
   },
   {
     month: 2,
@@ -756,13 +776,23 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Fev',
     year: 2026,
     vesselCount: 6,
+    concludedCount: 6,
+    operatingCount: 0,
+    plannedCount: 0,
+    concludedTotalVolume: 199700,
+    concludedScTotal: 131050,
+    concludedSqTotal: 68650,
     scTotal: 131050,
     sqTotal: 68650,
     totalVolume: 199700,
     salinorVolume: 165750,
     sdbVolume: 33950,
+    salinorConcludedVolume: 165750,
+    sdbConcludedVolume: 33950,
     expVolume: 117700,
     cbtVolume: 82000,
+    expConcludedVolume: 117700,
+    cbtConcludedVolume: 82000,
   },
   {
     month: 3,
@@ -770,13 +800,23 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Mar',
     year: 2026,
     vesselCount: 4,
+    concludedCount: 4,
+    operatingCount: 0,
+    plannedCount: 0,
+    concludedTotalVolume: 138450,
+    concludedScTotal: 73700,
+    concludedSqTotal: 64750,
     scTotal: 73700,
     sqTotal: 64750,
     totalVolume: 138450,
     salinorVolume: 138450,
     sdbVolume: 0,
+    salinorConcludedVolume: 138450,
+    sdbConcludedVolume: 0,
     expVolume: 110450,
     cbtVolume: 28000,
+    expConcludedVolume: 110450,
+    cbtConcludedVolume: 28000,
   },
   {
     month: 4,
@@ -784,13 +824,23 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Abr',
     year: 2026,
     vesselCount: 2,
+    concludedCount: 2,
+    operatingCount: 0,
+    plannedCount: 0,
+    concludedTotalVolume: 67050,
+    concludedScTotal: 22450,
+    concludedSqTotal: 44600,
     scTotal: 22450,
     sqTotal: 44600,
     totalVolume: 67050,
     salinorVolume: 67050,
     sdbVolume: 0,
+    salinorConcludedVolume: 67050,
+    sdbConcludedVolume: 0,
     expVolume: 0,
     cbtVolume: 67050,
+    expConcludedVolume: 0,
+    cbtConcludedVolume: 67050,
   },
   {
     month: 5,
@@ -798,13 +848,23 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Mai',
     year: 2026,
     vesselCount: 5,
+    concludedCount: 5,
+    operatingCount: 0,
+    plannedCount: 0,
+    concludedTotalVolume: 214650,
+    concludedScTotal: 190750,
+    concludedSqTotal: 23900,
     scTotal: 190750,
     sqTotal: 23900,
     totalVolume: 214650,
     salinorVolume: 123050,
     sdbVolume: 91600,
+    salinorConcludedVolume: 123050,
+    sdbConcludedVolume: 91600,
     expVolume: 138350,
     cbtVolume: 76300,
+    expConcludedVolume: 138350,
+    cbtConcludedVolume: 76300,
   },
   {
     month: 6,
@@ -812,13 +872,23 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Jun',
     year: 2026,
     vesselCount: 3,
+    concludedCount: 3,
+    operatingCount: 0,
+    plannedCount: 0,
+    concludedTotalVolume: 124785,
+    concludedScTotal: 101035,
+    concludedSqTotal: 23750,
     scTotal: 101035,
     sqTotal: 23750,
     totalVolume: 124785,
     salinorVolume: 124785,
     sdbVolume: 0,
+    salinorConcludedVolume: 124785,
+    sdbConcludedVolume: 0,
     expVolume: 81285,
     cbtVolume: 43500,
+    expConcludedVolume: 81285,
+    cbtConcludedVolume: 43500,
   },
   {
     month: 7,
@@ -826,44 +896,79 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Jul',
     year: 2026,
     vesselCount: 5,
+    concludedCount: 5,
+    operatingCount: 0,
+    plannedCount: 0,
+    concludedTotalVolume: 162574,
+    concludedScTotal: 50021,
+    concludedSqTotal: 112553,
     scTotal: 50021,
     sqTotal: 112553,
     totalVolume: 162574,
     salinorVolume: 162574,
     sdbVolume: 0,
+    salinorConcludedVolume: 162574,
+    sdbConcludedVolume: 0,
     expVolume: 79521,
     cbtVolume: 83053,
+    expConcludedVolume: 79521,
+    cbtConcludedVolume: 83053,
   },
   {
     month: 8,
     monthName: 'Agosto',
     shortMonth: 'Ago',
     year: 2026,
-    vesselCount: 5,
-    scTotal: 142980,
+    vesselCount: 3,
+    concludedCount: 3,
+    operatingCount: 1,
+    plannedCount: 1,
+    concludedTotalVolume: 95550, // Somente navios Concluídos: MARCOS DIAS (43.000) + CALLIO (24.450) + SUNLIGHT (28.100)
+    concludedScTotal: 61050,
+    concludedSqTotal: 34500,
+    scTotal: 61050,
     sqTotal: 34500,
-    totalVolume: 177480,
-    salinorVolume: 149380,
+    totalVolume: 95550, // Total Embarcado (Somente Concluídos)
+    salinorVolume: 67450,
     sdbVolume: 28100,
-    expVolume: 134480,
+    salinorConcludedVolume: 67450,
+    sdbConcludedVolume: 28100,
+    expVolume: 52550,
     cbtVolume: 43000,
+    expConcludedVolume: 52550,
+    cbtConcludedVolume: 43000,
   },
 ];
 
 export const LINEUP_LAST_UPDATED = '26/08/2026 08:54';
 
 export const OVERALL_TOTALS = {
-  totalTons: 1217519,
-  scTotalTons: 821916,
-  sqTotalTons: 395603,
-  totalVessels: 34,
+  // Total Embarcado (Somente Navios Concluídos)
+  concludedTotalTons: 1135589, // 1.135.589 toneladas efetivamente embarcadas (Jan a Ago)
+  concludedScTotalTons: 739986,
+  concludedSqTotalTons: 395603,
   concludedVessels: 32,
-  operatingVessels: 1,
-  plannedVessels: 1,
-  salinorTotalTons: 1063869,
+  concludedSalinorTons: 981939,
+  concludedSdbTons: 153650,
+  concludedExpTons: 652956,
+  concludedCbtTons: 482633,
+
+  // Totais Consolidados (Somente Concluídos)
+  totalTons: 1135589,
+  scTotalTons: 739986,
+  sqTotalTons: 395603,
+  totalVessels: 32,
+  salinorTotalTons: 981939,
   sdbTotalTons: 153650,
-  expTotalTons: 734886,
+  expTotalTons: 652956,
   cbtTotalTons: 482633,
-  monthlyAverageTons: 152190,
-  vesselAverageTons: 35809,
+  monthlyAverageTons: 141949, // 1.135.589 / 8
+  vesselAverageTons: 35487, // 1.135.589 / 32
+
+  // Informações adicionais de Navios Em Operação e Previstos
+  operatingTotalTons: 36150,
+  operatingVessels: 1,
+  plannedTotalTons: 45780,
+  plannedVessels: 1,
+  totalProgrammedTons: 1217519,
 };

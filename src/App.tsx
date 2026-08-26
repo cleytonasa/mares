@@ -280,9 +280,9 @@ export default function App() {
                       </span>
                       <Ship className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 group-hover:text-cyan-400 shrink-0 transition" />
                     </div>
-                    <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Embarques de Sal</h4>
+                    <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Painel de Embarque</h4>
                     <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 leading-snug line-clamp-2">
-                      1.2M Tons, 34 navios, gráficos e line-up.
+                      1.1M Tons, navios concluídos, gráficos e line-up.
                     </p>
                   </div>
                 </div>
