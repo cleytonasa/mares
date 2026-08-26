@@ -72,10 +72,19 @@ function postBuild() {
     }
   }
 
-  // Ensure .htaccess is in production
+  // Copy all assets from production/assets to root assets
+  if (fs.existsSync(prodAssetsDir)) {
+    const allProdFiles = fs.readdirSync(prodAssetsDir);
+    allProdFiles.forEach(f => {
+      fs.copyFileSync(path.join(prodAssetsDir, f), path.join(rootAssetsDir, f));
+    });
+  }
+
+  // Ensure .htaccess is in production and root
   const publicHtaccess = path.resolve('public', '.htaccess');
   if (fs.existsSync(publicHtaccess)) {
     fs.copyFileSync(publicHtaccess, path.join(productionDir, '.htaccess'));
+    fs.copyFileSync(publicHtaccess, path.resolve('.htaccess'));
   }
 
   console.log('✅ Post-build processing completed successfully with legacy hash fallbacks!');
