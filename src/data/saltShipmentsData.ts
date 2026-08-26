@@ -853,13 +853,32 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
 export const LINEUP_LAST_UPDATED = '26/08/2026 08:54';
 
 export const OVERALL_TOTALS = {
-  totalTons: 1217519,
+  // Volume Efetivamente Embarcado (Navios Concluídos)
+  concludedTons: 1135589,
+  concludedScTons: 739986,
+  concludedSqTons: 395603,
+  concludedVessels: 32,
+  concludedMonthlyAverageTons: 141949,
+  concludedVesselAverageTons: 35487,
+
+  // Volume em Operação
+  operatingTons: 36150,
+  operatingScTons: 36150,
+  operatingSqTons: 0,
+  operatingVessels: 1,
+
+  // Volume Previsto (Programado)
+  plannedTons: 45780,
+  plannedScTons: 45780,
+  plannedSqTons: 0,
+  plannedVessels: 1,
+
+  // Total Geral do Line-Up (Concluído + Em Operação + Previsto)
+  totalProgrammedTons: 1217519,
+  totalTons: 1135589, // Total Embarcado (apenas concluídos)
   scTotalTons: 821916,
   sqTotalTons: 395603,
   totalVessels: 34,
-  concludedVessels: 32,
-  operatingVessels: 1,
-  plannedVessels: 1,
   salinorTotalTons: 1063869,
   sdbTotalTons: 153650,
   expTotalTons: 734886,

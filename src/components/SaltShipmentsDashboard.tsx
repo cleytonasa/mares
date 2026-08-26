@@ -113,7 +113,18 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
   const filteredTotals = useMemo(() => {
     const targetList = filteredVessels;
 
-    const totalVolume = targetList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const concludedList = targetList.filter((v) => v.status === 'Concluído');
+    const operatingList = targetList.filter((v) => v.status === 'Em operação');
+    const plannedList = targetList.filter((v) => v.status === 'Previsto');
+
+    const totalProgrammedVolume = targetList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const concludedVolume = concludedList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const operatingVolume = operatingList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const plannedVolume = plannedList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+
+    const concludedSc = concludedList.reduce((acc, v) => acc + v.scVolumeTons, 0);
+    const concludedSq = concludedList.reduce((acc, v) => acc + v.sqVolumeTons, 0);
+
     const scTotal = targetList.reduce((acc, v) => acc + v.scVolumeTons, 0);
     const sqTotal = targetList.reduce((acc, v) => acc + v.sqVolumeTons, 0);
     const salinorVolume = targetList.filter((v) => v.shipper === 'SALINOR').reduce((acc, v) => acc + v.totalVolumeTons, 0);
@@ -122,7 +133,13 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
     const cbtVolume = targetList.filter((v) => v.trafficType === 'CBT').reduce((acc, v) => acc + v.totalVolumeTons, 0);
 
     return {
-      totalVolume,
+      totalVolume: totalProgrammedVolume,
+      totalProgrammedVolume,
+      concludedVolume,
+      operatingVolume,
+      plannedVolume,
+      concludedSc,
+      concludedSq,
       scTotal,
       sqTotal,
       vesselCount: targetList.length,
@@ -130,11 +147,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
       sdbVolume,
       expVolume,
       cbtVolume,
-      concludedCount: concludedFilteredVessels.length,
-      operatingCount: operatingFilteredVessels.length,
-      plannedCount: plannedFilteredVessels.length,
+      concludedCount: concludedList.length,
+      operatingCount: operatingList.length,
+      plannedCount: plannedList.length,
     };
-  }, [filteredVessels, concludedFilteredVessels, operatingFilteredVessels, plannedFilteredVessels]);
+  }, [filteredVessels]);
 
   // Copy formatted WhatsApp report
   const handleCopyWhatsAppReport = () => {
@@ -143,10 +160,16 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
     let text = `⚓ *INTERSAL - RELATÓRIO DE EMBARQUE DE SAL (TERMISA)*\n`;
     text += `📅 *Período:* ${monthLabel}\n`;
     text += `🕒 *Atualizado em:* ${LINEUP_LAST_UPDATED}\n`;
-    text += `🚢 *Total de Navios:* ${filteredTotals.vesselCount} (${filteredTotals.concludedCount} Concluídos${filteredTotals.operatingCount > 0 ? `, ${filteredTotals.operatingCount} Em operação` : ''}${filteredTotals.plannedCount > 0 ? `, ${filteredTotals.plannedCount} Previstos` : ''})\n`;
-    text += `📦 *Total Programado/Embarcado:* ${filteredTotals.totalVolume.toLocaleString('pt-BR')} t\n`;
-    text += `  • Sal Comum (SC): ${filteredTotals.scTotal.toLocaleString('pt-BR')} t (${((filteredTotals.scTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)\n`;
-    text += `  • Sal Químico (SQ): ${filteredTotals.sqTotal.toLocaleString('pt-BR')} t (${((filteredTotals.sqTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)\n\n`;
+    text += `🚢 *Total de Navios:* ${filteredTotals.concludedCount} Concluídos${filteredTotals.operatingCount > 0 ? ` + ${filteredTotals.operatingCount} Em operação` : ''}${filteredTotals.plannedCount > 0 ? ` + ${filteredTotals.plannedCount} Previsto(s)` : ''}\n`;
+    text += `✅ *Total Embarcado:* ${filteredTotals.concludedVolume.toLocaleString('pt-BR')} t\n`;
+    if (filteredTotals.operatingCount > 0) {
+      text += `⏳ *Em Operação:* ${filteredTotals.operatingVolume.toLocaleString('pt-BR')} t\n`;
+    }
+    if (filteredTotals.plannedCount > 0) {
+      text += `🕒 *Previsto:* ${filteredTotals.plannedVolume.toLocaleString('pt-BR')} t\n`;
+    }
+    text += `  • Sal Comum (SC): ${filteredTotals.concludedSc.toLocaleString('pt-BR')} t (${((filteredTotals.concludedSc / (filteredTotals.concludedVolume || 1)) * 100).toFixed(1)}%)\n`;
+    text += `  • Sal Químico (SQ): ${filteredTotals.concludedSq.toLocaleString('pt-BR')} t (${((filteredTotals.concludedSq / (filteredTotals.concludedVolume || 1)) * 100).toFixed(1)}%)\n\n`;
     text += `🏢 *Por Salineira:*\n`;
     text += `  • SALINOR: ${filteredTotals.salinorVolume.toLocaleString('pt-BR')} t\n`;
     text += `  • SDB: ${filteredTotals.sdbVolume.toLocaleString('pt-BR')} t\n\n`;
@@ -538,7 +561,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
         <div className="p-3.5 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-bold text-cyan-400 uppercase tracking-wide">
-              {selectedStatus === 'Previsto' ? 'Volume Previsto' : 'Total Embarcado'}
+              {selectedStatus === 'Previsto'
+                ? 'Volume Previsto'
+                : selectedStatus === 'Em operação'
+                ? 'Volume em Operação'
+                : 'Total Embarcado'}
             </span>
             <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400">
               <TrendingUp className="w-4 h-4" />
@@ -546,16 +573,42 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           </div>
           <div className="mt-2 sm:mt-3">
             <div className="text-xl sm:text-3xl font-black text-white tracking-tight">
-              {filteredTotals.totalVolume.toLocaleString('pt-BR')}
+              {selectedStatus === 'Previsto'
+                ? filteredTotals.plannedVolume.toLocaleString('pt-BR')
+                : selectedStatus === 'Em operação'
+                ? filteredTotals.operatingVolume.toLocaleString('pt-BR')
+                : filteredTotals.concludedVolume.toLocaleString('pt-BR')}
+              <span className="text-xs sm:text-sm font-semibold text-slate-400 ml-1">t</span>
             </div>
-            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
-              <span>Média: {(filteredTotals.totalVolume / (selectedMonth === 'ALL' ? 8 : 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} / mês</span>
+            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400 flex-wrap">
+              {selectedStatus === 'Previsto' ? (
+                <span>{filteredTotals.plannedCount} navio programado</span>
+              ) : selectedStatus === 'Em operação' ? (
+                <span>{filteredTotals.operatingCount} navio em operação</span>
+              ) : (
+                <span>Média: {(filteredTotals.concludedVolume / (selectedMonth === 'ALL' ? 8 : 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} / mês</span>
+              )}
             </div>
           </div>
           <div className="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
             <div
               className="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, (filteredTotals.totalVolume / OVERALL_TOTALS.totalTons) * 100)}%` }}
+              style={{
+                width: `${Math.min(
+                  100,
+                  ((selectedStatus === 'Previsto'
+                    ? filteredTotals.plannedVolume
+                    : selectedStatus === 'Em operação'
+                    ? filteredTotals.operatingVolume
+                    : filteredTotals.concludedVolume) /
+                    (selectedStatus === 'Previsto'
+                      ? OVERALL_TOTALS.plannedTons
+                      : selectedStatus === 'Em operação'
+                      ? OVERALL_TOTALS.operatingTons
+                      : OVERALL_TOTALS.concludedTons)) *
+                    100
+                )}%`,
+              }}
             />
           </div>
         </div>
@@ -616,10 +669,15 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           </div>
           <div className="mt-2 sm:mt-3">
             <div className="text-xl sm:text-3xl font-black text-white tracking-tight">
-              {filteredTotals.vesselCount} <span className="text-xs sm:text-sm font-semibold text-slate-400">navios</span>
+              {selectedStatus === 'Concluído' ? filteredTotals.concludedCount : filteredTotals.vesselCount} <span className="text-xs sm:text-sm font-semibold text-slate-400">navios</span>
             </div>
             <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
-              <span>Média por navio: {(filteredTotals.totalVolume / (filteredTotals.vesselCount || 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
+              <span>
+                Média por navio: {(
+                  (selectedStatus === 'Concluído' ? filteredTotals.concludedVolume : filteredTotals.totalVolume) /
+                  ((selectedStatus === 'Concluído' ? filteredTotals.concludedCount : filteredTotals.vesselCount) || 1)
+                ).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} t
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 flex-wrap">
@@ -1019,7 +1077,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Pico de movimentação anual: <strong className="text-white">Maio/2026 (214.650 t)</strong> • Total acumulado embarcado: <strong className="text-cyan-400">{OVERALL_TOTALS.totalTons.toLocaleString('pt-BR')} t</strong> ({OVERALL_TOTALS.concludedVessels} navios)
+              Pico de movimentação anual: <strong className="text-white">Maio/2026 (214.650 t)</strong> • Total embarcado concluído: <strong className="text-cyan-400">{OVERALL_TOTALS.concludedTons.toLocaleString('pt-BR')} t</strong> ({OVERALL_TOTALS.concludedVessels} navios)
             </span>
             {selectedMonth !== 'ALL' && (
               <button
