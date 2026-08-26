@@ -111,38 +111,42 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
   // Aggregated totals of filtered selection
   const filteredTotals = useMemo(() => {
-    const targetList = filteredVessels;
+    const concludedList = filteredVessels.filter((v) => v.status === 'Concluído');
+    const operatingList = filteredVessels.filter((v) => v.status === 'Em operação');
+    const plannedList = filteredVessels.filter((v) => v.status === 'Previsto');
 
-    const concludedList = targetList.filter((v) => v.status === 'Concluído');
-    const operatingList = targetList.filter((v) => v.status === 'Em operação');
-    const plannedList = targetList.filter((v) => v.status === 'Previsto');
+    // If 'ALL' is selected, metrics represent effectively concluded/shipped volume
+    const activeList =
+      selectedStatus === 'ALL'
+        ? concludedList
+        : selectedStatus === 'Em operação'
+        ? operatingList
+        : selectedStatus === 'Previsto'
+        ? plannedList
+        : concludedList;
 
-    const totalProgrammedVolume = targetList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const totalVolume = activeList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const scTotal = activeList.reduce((acc, v) => acc + v.scVolumeTons, 0);
+    const sqTotal = activeList.reduce((acc, v) => acc + v.sqVolumeTons, 0);
+    const salinorVolume = activeList.filter((v) => v.shipper === 'SALINOR').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const sdbVolume = activeList.filter((v) => v.shipper === 'SDB').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const expVolume = activeList.filter((v) => v.trafficType === 'EXP').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const cbtVolume = activeList.filter((v) => v.trafficType === 'CBT').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+
     const concludedVolume = concludedList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
     const operatingVolume = operatingList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
     const plannedVolume = plannedList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
 
-    const concludedSc = concludedList.reduce((acc, v) => acc + v.scVolumeTons, 0);
-    const concludedSq = concludedList.reduce((acc, v) => acc + v.sqVolumeTons, 0);
-
-    const scTotal = targetList.reduce((acc, v) => acc + v.scVolumeTons, 0);
-    const sqTotal = targetList.reduce((acc, v) => acc + v.sqVolumeTons, 0);
-    const salinorVolume = targetList.filter((v) => v.shipper === 'SALINOR').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const sdbVolume = targetList.filter((v) => v.shipper === 'SDB').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const expVolume = targetList.filter((v) => v.trafficType === 'EXP').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const cbtVolume = targetList.filter((v) => v.trafficType === 'CBT').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-
     return {
-      totalVolume: totalProgrammedVolume,
-      totalProgrammedVolume,
+      totalVolume,
       concludedVolume,
       operatingVolume,
       plannedVolume,
-      concludedSc,
-      concludedSq,
+      concludedSc: concludedList.reduce((acc, v) => acc + v.scVolumeTons, 0),
+      concludedSq: concludedList.reduce((acc, v) => acc + v.sqVolumeTons, 0),
       scTotal,
       sqTotal,
-      vesselCount: targetList.length,
+      vesselCount: activeList.length,
       salinorVolume,
       sdbVolume,
       expVolume,
@@ -151,7 +155,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
       operatingCount: operatingList.length,
       plannedCount: plannedList.length,
     };
-  }, [filteredVessels]);
+  }, [filteredVessels, selectedStatus]);
 
   // Copy formatted WhatsApp report
   const handleCopyWhatsAppReport = () => {

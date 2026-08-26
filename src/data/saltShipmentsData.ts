@@ -839,14 +839,14 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     monthName: 'Agosto',
     shortMonth: 'Ago',
     year: 2026,
-    vesselCount: 5,
-    scTotal: 142980,
+    vesselCount: 3,
+    scTotal: 61150,
     sqTotal: 34500,
-    totalVolume: 177480,
-    salinorVolume: 149380,
+    totalVolume: 95550,
+    salinorVolume: 67550,
     sdbVolume: 28100,
-    expVolume: 134480,
-    cbtVolume: 43000,
+    expVolume: 61150,
+    cbtVolume: 34500,
   },
 ];
 
@@ -873,16 +873,15 @@ export const OVERALL_TOTALS = {
   plannedSqTons: 0,
   plannedVessels: 1,
 
-  // Total Geral do Line-Up (Concluído + Em Operação + Previsto)
-  totalProgrammedTons: 1217519,
-  totalTons: 1135589, // Total Embarcado (apenas concluídos)
-  scTotalTons: 821916,
+  // Totais Gerais Consolidados (Apenas Concluídos)
+  totalTons: 1135589,
+  scTotalTons: 739986,
   sqTotalTons: 395603,
-  totalVessels: 34,
-  salinorTotalTons: 1063869,
+  totalVessels: 32,
+  salinorTotalTons: 981939,
   sdbTotalTons: 153650,
-  expTotalTons: 734886,
+  expTotalTons: 652956,
   cbtTotalTons: 482633,
-  monthlyAverageTons: 152190,
-  vesselAverageTons: 35809,
+  monthlyAverageTons: 141949,
+  vesselAverageTons: 35487,
 };
