@@ -1,4 +1,4 @@
-# Configurações do Apache para SPA em subdiretório (/mares/)
+# Apache Configuration for SPA in subfolder /mares/
 DirectoryIndex index.html
 
 <IfModule mod_mime.c>
@@ -16,16 +16,24 @@ DirectoryIndex index.html
   RewriteEngine On
   RewriteBase /mares/
 
-  # Arquivos e diretórios existentes não são reescritos
+  # 1. Se o arquivo ou diretório existir exatamente no disco, sirva direto
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Se for arquivo de script/css/imagem que não existe fisicamente, retorne 404
-  RewriteCond %{REQUEST_URI} \.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|webmanifest|json|woff|woff2)$ [NC]
+  # 2. Compatibilidade retroativa: se o navegador requisitar qualquer JS que não existe mais, entregue o bundle JS atual
+  RewriteCond %{REQUEST_URI} assets/.*\.js$ [NC]
+  RewriteRule ^assets/.*\.js$ assets/index-BWqp4bwG.js [L]
+
+  # 3. Compatibilidade retroativa: se o navegador requisitar qualquer CSS que não existe mais, entregue o CSS atual
+  RewriteCond %{REQUEST_URI} assets/.*\.css$ [NC]
+  RewriteRule ^assets/.*\.css$ assets/index-mxmAu9cx.css [L]
+
+  # 4. Outros tipos de assets estáticos que não existem devem retornar 404
+  RewriteCond %{REQUEST_URI} \.(png|jpg|jpeg|gif|svg|ico|webmanifest|json|woff|woff2)$ [NC]
   RewriteRule ^ - [R=404,L]
 
-  # Fallback de SPA para index.html
+  # 5. Fallback para index.html (SPA)
   RewriteRule ^ index.html [L]
 </IfModule>
 
@@ -36,5 +44,3 @@ DirectoryIndex index.html
     Header set Expires "0"
   </FilesMatch>
 </IfModule>
-
-
