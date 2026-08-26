@@ -44,6 +44,29 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Auto-recovery on script chunk 404 or cache desynchronization -->
+    <script>
+      window.addEventListener('error', function(e) {
+        if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+          var key = '__intersal_reload_attempt';
+          var last = sessionStorage.getItem(key);
+          if (!last || Date.now() - parseInt(last, 10) > 8000) {
+            sessionStorage.setItem(key, Date.now().toString());
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                names.forEach(function(n) { caches.delete(n); });
+              });
+            }
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(regs) {
+                regs.forEach(function(r) { r.unregister(); });
+              });
+            }
+            window.location.reload(true);
+          }
+        }
+      }, true);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

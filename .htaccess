@@ -1,6 +1,6 @@
 # 1. Permissões de Acesso e Índices
 Options -Indexes +FollowSymLinks
-DirectoryIndex production/index.html dist/index.html index.html
+DirectoryIndex index.html
 
 <IfModule mod_authz_core.c>
   Require all granted
@@ -20,35 +20,31 @@ DirectoryIndex production/index.html dist/index.html index.html
   AddType font/woff2 .woff2
 </IfModule>
 
-# 3. Regras de Roteamento Inteligente (Suporte a Deploy Direto e Subpastas production/dist)
+# 3. Regras de Roteamento SPA
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # A. Redirecionamento transparente de assets e arquivos estáticos para a pasta production/
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{DOCUMENT_ROOT}/%{REQUEST_URI} !-f
-  RewriteRule ^assets/(.*)$ production/assets/$1 [L]
-
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteRule ^(favicon\.ico|logo\.svg|manifest\.webmanifest|manifest\.json|sw\.js|apple-touch-icon\.png|icon-192\.png|icon-512\.png|og-image\.png|favicon-32x32\.png|favicon\.png)$ production/$1 [L]
-
-  # B. Servir arquivos físicos existentes diretamente
+  # Não reescrever requisições para arquivos ou pastas físicas existentes
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # C. Não reescrever requisições de arquivos inexistentes com extensão conhecida para HTML (evita erro de MIME type)
-  RewriteCond %{REQUEST_URI} \.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|webmanifest|json|woff|woff2)$ [NC]
+  # Se for um script JS antigo ou chunk que não existe, redirecionar para index.js
+  RewriteCond %{REQUEST_URI} assets/.*\.js$ [NC]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^assets/.*\.js$ assets/index.js [L]
+
+  # Se for um CSS antigo que não existe, redirecionar para index.css
+  RewriteCond %{REQUEST_URI} assets/.*\.css$ [NC]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^assets/.*\.css$ assets/index.css [L]
+
+  # Se for outro asset com extensão que não existe, retorne 404 em vez de index.html
+  RewriteCond %{REQUEST_URI} \.(png|jpg|jpeg|gif|svg|ico|webmanifest|json|woff|woff2)$ [NC]
   RewriteRule ^ - [R=404,L]
 
-  # D. Servir o index.html de produção
-  RewriteRule ^$ production/index.html [L]
-  RewriteRule ^index\.html$ production/index.html [L]
-
-  # E. Fallback SPA
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^(.*)$ production/index.html [L]
+  # Fallback de SPA apenas para páginas de navegação
+  RewriteRule ^ index.html [L]
 </IfModule>
 
 # 4. Compressão GZIP / Deflate

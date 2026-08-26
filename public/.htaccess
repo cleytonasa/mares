@@ -29,8 +29,18 @@ DirectoryIndex index.html
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Se for um asset com extensão que não existe, retorne 404 em vez de index.html
-  RewriteCond %{REQUEST_URI} \.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|webmanifest|json|woff|woff2)$ [NC]
+  # Se for um script JS antigo ou chunk que não existe, redirecionar para index.js
+  RewriteCond %{REQUEST_URI} assets/.*\.js$ [NC]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^assets/.*\.js$ assets/index.js [L]
+
+  # Se for um CSS antigo que não existe, redirecionar para index.css
+  RewriteCond %{REQUEST_URI} assets/.*\.css$ [NC]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^assets/.*\.css$ assets/index.css [L]
+
+  # Se for outro asset com extensão que não existe, retorne 404 em vez de index.html
+  RewriteCond %{REQUEST_URI} \.(png|jpg|jpeg|gif|svg|ico|webmanifest|json|woff|woff2)$ [NC]
   RewriteRule ^ - [R=404,L]
 
   # Fallback de SPA apenas para páginas de navegação
