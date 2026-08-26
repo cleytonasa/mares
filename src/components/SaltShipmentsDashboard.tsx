@@ -604,11 +604,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           </div>
         </div>
 
-        {/* Metric 3: Frota / Navios Concluídos */}
+        {/* Metric 3: Frota / Navios Concluídos & Em Operação */}
         <div className="p-3.5 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-bold text-indigo-400 uppercase tracking-wide">
-              {selectedStatus === 'Previsto' ? 'Navios Previstos' : 'Navios Concluídos'}
+              {selectedStatus === 'Previsto' ? 'Navios Previstos' : selectedStatus === 'Em operação' ? 'Navios em Operação' : 'Navios no Line-Up'}
             </span>
             <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
               <Ship className="w-4 h-4" />
@@ -622,12 +622,17 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
               <span>Média por navio: {(filteredTotals.totalVolume / (filteredTotals.vesselCount || 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2">
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 flex-wrap">
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <CheckCircle2 className="w-3 h-3" /> {filteredTotals.concludedCount} Concluídos
             </span>
-            {filteredTotals.plannedCount > 0 && (
+            {filteredTotals.operatingCount > 0 && (
               <span className="flex items-center gap-1 text-amber-400 font-medium">
+                <Ship className="w-3 h-3 text-amber-400 animate-pulse" /> {filteredTotals.operatingCount} Em operação
+              </span>
+            )}
+            {filteredTotals.plannedCount > 0 && (
+              <span className="flex items-center gap-1 text-sky-400 font-medium">
                 <Clock className="w-3 h-3" /> {filteredTotals.plannedCount} Previstos
               </span>
             )}
