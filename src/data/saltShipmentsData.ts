@@ -919,21 +919,21 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     monthName: 'Agosto',
     shortMonth: 'Ago',
     year: 2026,
-    vesselCount: 3,
+    vesselCount: 5,
     concludedCount: 3,
     operatingCount: 1,
     plannedCount: 1,
     concludedTotalVolume: 95550, // Somente navios Concluídos: MARCOS DIAS (43.000) + CALLIO (24.450) + SUNLIGHT (28.100)
     concludedScTotal: 61050,
     concludedSqTotal: 34500,
-    scTotal: 61050,
+    scTotal: 142980,
     sqTotal: 34500,
-    totalVolume: 95550, // Total Embarcado (Somente Concluídos)
-    salinorVolume: 67450,
+    totalVolume: 177480, // Total line-up de Agosto (Concluídos + Em operação + Previstos)
+    salinorVolume: 149380,
     sdbVolume: 28100,
     salinorConcludedVolume: 67450,
     sdbConcludedVolume: 28100,
-    expVolume: 52550,
+    expVolume: 134480,
     cbtVolume: 43000,
     expConcludedVolume: 52550,
     cbtConcludedVolume: 43000,
@@ -953,11 +953,11 @@ export const OVERALL_TOTALS = {
   concludedExpTons: 652956,
   concludedCbtTons: 482633,
 
-  // Totais Consolidados (Somente Concluídos)
-  totalTons: 1135589,
+  // Totais Consolidados do Line-up
+  totalTons: 1135589, // Total Embarcado Concluído
   scTotalTons: 739986,
   sqTotalTons: 395603,
-  totalVessels: 32,
+  totalVessels: 34, // Total de navios no line-up (32 concluídos + 1 em operação + 1 previsto)
   salinorTotalTons: 981939,
   sdbTotalTons: 153650,
   expTotalTons: 652956,

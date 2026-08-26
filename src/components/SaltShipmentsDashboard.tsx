@@ -229,6 +229,32 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
               </h1>
             </div>
           </div>
+
+          {/* Real-Time Port Status Badge (Em Operação) */}
+          <div className="flex items-center gap-2">
+            <div className="px-3.5 py-2 rounded-xl bg-slate-950/90 border border-amber-500/70 text-amber-300 shadow-lg flex items-center gap-3">
+              <div className="relative flex items-center justify-center shrink-0">
+                <span className="w-3 h-3 rounded-full bg-amber-400 animate-ping absolute opacity-75" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 relative" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-amber-400 font-black uppercase tracking-wider">
+                    EM OPERAÇÃO NO TERMINAL
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded bg-amber-950 text-[9px] font-mono text-amber-300 border border-amber-500/40">
+                    Ao Vivo
+                  </span>
+                </div>
+                <div className="text-xs font-black text-white font-mono flex items-center gap-1.5 mt-0.5">
+                  <Ship className="w-3.5 h-3.5 text-amber-400" />
+                  <span>CLIPPER BARI STAR</span>
+                  <span className="text-slate-400 font-normal">•</span>
+                  <span className="text-cyan-300">36.150 t SC</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Embedded Chronological Schedule & Vessels Box (Operating, Planned & Concluded) with Month Navigation */}
