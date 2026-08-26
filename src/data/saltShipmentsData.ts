@@ -10,7 +10,7 @@ export interface SaltVesselRecord {
   eta: string;
   etb: string;
   etd: string;
-  status: 'Concluído' | 'Em operação' | 'Previsto';
+  status: 'Concluído' | 'Previsto';
   scVolumeTons: number; // Sal Comum (SC)
   sqVolumeTons: number; // Sal Químico (SQ)
   totalVolumeTons: number;
@@ -699,10 +699,10 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     vesselName: 'CLIPPER BARI STAR',
     loaMeters: 179.97,
     dwt: 37976,
-    eta: '24/08/2026 10:00',
-    etb: '24/08/2026 14:00',
-    etd: '27/08/2026 09:00',
-    status: 'Em operação',
+    eta: '24/08/2026 08:00',
+    etb: '24/08/2026 10:00',
+    etd: '28/08/2026 09:00',
+    status: 'Previsto',
     scVolumeTons: 36150,
     sqVolumeTons: 0,
     totalVolumeTons: 36150,
@@ -719,9 +719,9 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     vesselName: 'GANNET BULKER',
     loaMeters: 189.99,
     dwt: 57809,
-    eta: '23/08/2026 21:30',
-    etb: '27/08/2026 11:00',
-    etd: '31/08/2026 08:00',
+    eta: '23/08/2026 18:00',
+    etb: '28/08/2026 11:00',
+    etd: '02/09/2026 08:00',
     status: 'Previsto',
     scVolumeTons: 45780,
     sqVolumeTons: 0,
@@ -840,48 +840,27 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Ago',
     year: 2026,
     vesselCount: 3,
-    scTotal: 61150,
+    scTotal: 61050,
     sqTotal: 34500,
     totalVolume: 95550,
-    salinorVolume: 67550,
+    salinorVolume: 67450,
     sdbVolume: 28100,
-    expVolume: 61150,
-    cbtVolume: 34500,
+    expVolume: 52550,
+    cbtVolume: 43000,
   },
 ];
 
-export const LINEUP_LAST_UPDATED = '26/08/2026 08:54';
-
 export const OVERALL_TOTALS = {
-  // Volume Efetivamente Embarcado (Navios Concluídos)
-  concludedTons: 1135589,
-  concludedScTons: 739986,
-  concludedSqTons: 395603,
-  concludedVessels: 32,
-  concludedMonthlyAverageTons: 141949,
-  concludedVesselAverageTons: 35487,
-
-  // Volume em Operação
-  operatingTons: 36150,
-  operatingScTons: 36150,
-  operatingSqTons: 0,
-  operatingVessels: 1,
-
-  // Volume Previsto (Programado)
-  plannedTons: 45780,
-  plannedScTons: 45780,
-  plannedSqTons: 0,
-  plannedVessels: 1,
-
-  // Totais Gerais Consolidados (Apenas Concluídos)
   totalTons: 1135589,
-  scTotalTons: 739986,
-  sqTotalTons: 395603,
-  totalVessels: 32,
+  scTotalTons: 785736,
+  sqTotalTons: 349853,
+  totalVessels: 34,
+  concludedVessels: 32,
+  plannedVessels: 2,
   salinorTotalTons: 981939,
   sdbTotalTons: 153650,
   expTotalTons: 652956,
   cbtTotalTons: 482633,
-  monthlyAverageTons: 141949,
+  monthlyAverageTons: 141948,
   vesselAverageTons: 35487,
 };

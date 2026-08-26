@@ -1,19 +1,13 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import {StrictMode} from 'react';
+import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-
-// Global error catcher for legacy browsers / cache issues
-window.addEventListener('error', (e) => {
-  console.error('Global Application Error:', e);
-});
 
 // Register Service Worker for PWA and Push Notifications
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    const swPath = './sw.js';
     navigator.serviceWorker
-      .register(swPath)
+      .register('/sw.js')
       .then((reg) => {
         reg.update();
       })
@@ -26,8 +20,6 @@ if ('serviceWorker' in navigator) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
-  </StrictMode>
+  </StrictMode>,
 );
-
-
 

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowUpRight, ArrowDownRight, Minus, Waves, Clock, Compass, Wind, Sparkles, Ship, ExternalLink } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, Waves, Clock, Compass, Wind, Sparkles } from 'lucide-react';
 import { CurrentTideState } from '../utils/tideCalculations';
 import { PortConfig, WeatherData } from '../types/maritime';
-import { SALT_SHIPMENTS_2026 } from '../data/saltShipmentsData';
 
 interface CurrentTideCardProps {
   tideState: CurrentTideState;
@@ -12,7 +11,6 @@ interface CurrentTideCardProps {
   onSimulateTime?: (date: Date) => void;
   isSimulated?: boolean;
   onResetSimulation?: () => void;
-  onSelectShipmentsTab?: () => void;
 }
 
 export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
@@ -22,7 +20,6 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
   weather,
   isSimulated,
   onResetSimulation,
-  onSelectShipmentsTab,
 }) => {
   const {
     currentHeight,
@@ -39,9 +36,6 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
     minutesToNextHighEvent,
     currentWaterDepth,
   } = tideState;
-
-  // Operating ship in terminal (if any)
-  const operatingVessel = SALT_SHIPMENTS_2026.find((v) => v.status === 'Em operação');
 
   // Wind speed unit toggle ('knots' or 'kmh')
   const [windUnit, setWindUnit] = useState<'knots' | 'kmh'>(() => {
@@ -107,7 +101,7 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-800 relative z-10">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           <h2 className="text-sm font-semibold tracking-wider text-cyan-400 uppercase flex items-center gap-1.5 font-mono">
             <Waves className="w-4 h-4" />
             Nível da Maré em Tempo Real
@@ -119,27 +113,7 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {operatingVessel && (
-            <button
-              onClick={onSelectShipmentsTab}
-              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 transition cursor-pointer group shadow-sm"
-              title="Clique para ver detalhes do navio em operação no Line-Up"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-              </span>
-              <Ship className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
-              <span className="font-mono font-bold text-[11px] sm:text-xs text-white group-hover:text-amber-200">
-                {operatingVessel.vesselName}
-              </span>
-              <span className="text-[10px] text-amber-300/90 font-mono bg-amber-500/20 px-1.5 py-0.2 rounded border border-amber-500/30">
-                Em operação • {operatingVessel.totalVolumeTons.toLocaleString('pt-BR')} t
-              </span>
-            </button>
-          )}
-
+        <div className="flex items-center gap-2">
           {isSimulated && onResetSimulation && (
             <button
               onClick={onResetSimulation}
@@ -372,58 +346,6 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Navio em Operação no Terminal */}
-      {operatingVessel && (
-        <div className="mt-5 pt-4 border-t border-slate-800/80 relative z-10">
-          <div
-            onClick={onSelectShipmentsTab}
-            className="p-3 sm:p-4 rounded-xl bg-gradient-to-r from-amber-950/40 via-slate-950/90 to-slate-950/70 border border-amber-500/30 hover:border-amber-500/60 transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg group"
-            title="Clique para abrir o Line-Up completo de Embarques"
-          >
-            <div className="flex items-start sm:items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shrink-0 group-hover:bg-amber-500/25 transition">
-                <Ship className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 font-mono">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping inline-block" />
-                    EM OPERAÇÃO NO TERMISA
-                  </span>
-                  <span className="text-xs font-mono text-slate-400">Viagem: {operatingVessel.visitCode}</span>
-                </div>
-                <h3 className="text-sm sm:text-base font-black text-white group-hover:text-amber-300 transition flex items-center gap-2 mt-0.5 flex-wrap">
-                  <span>{operatingVessel.vesselName}</span>
-                  <span className="text-xs font-normal text-slate-400 font-mono">
-                    (LOA {operatingVessel.loaMeters}m • DWT {operatingVessel.dwt.toLocaleString('pt-BR')} t)
-                  </span>
-                </h3>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-5 text-xs font-mono pt-2.5 md:pt-0 border-t md:border-t-0 border-slate-800/80">
-              <div className="text-left md:text-right">
-                <span className="text-[10px] text-slate-400 block uppercase font-sans">Carga Programada</span>
-                <span className="font-bold text-amber-300 text-xs sm:text-sm">
-                  {operatingVessel.totalVolumeTons.toLocaleString('pt-BR')} t ({operatingVessel.trafficType})
-                </span>
-                <span className="text-[10px] text-slate-400 block font-sans">Sal Comum ({operatingVessel.shipper})</span>
-              </div>
-
-              <div className="text-right pl-3 sm:pl-4 border-l border-slate-800/80">
-                <span className="text-[10px] text-slate-400 block uppercase font-sans">Atracação / Saída</span>
-                <span className="font-bold text-slate-200 text-xs block">{operatingVessel.etb}</span>
-                <span className="text-[10px] text-slate-400 block">Saída Prev.: {operatingVessel.etd}</span>
-              </div>
-
-              <div className="hidden lg:flex items-center text-slate-500 group-hover:text-amber-400 transition pl-2">
-                <ExternalLink className="w-4 h-4" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

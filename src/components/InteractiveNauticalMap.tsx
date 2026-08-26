@@ -6,10 +6,17 @@ import {
   Locate,
   Loader2,
   AlertCircle,
+  Ship,
+  Radio,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Navigation,
 } from 'lucide-react';
 import { PortConfig, CustomUserLocation } from '../types/maritime';
 import { CurrentTideState } from '../utils/tideCalculations';
 import { decimalToDMS } from '../data/vesselTrafficData';
+import { fetchLiveAisVessels, LiveAisVessel, AisFeedStatus } from '../services/vesselAisService';
 
 interface InteractiveNauticalMapProps {
   port: PortConfig;
@@ -30,9 +37,33 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [mapType, setMapType] = useState<'satellite' | 'nautical'>('nautical');
   const [showRangeRings, setShowRangeRings] = useState<boolean>(true);
+  const [showAisLayer, setShowAisLayer] = useState<boolean>(true);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [isRealGps, setIsRealGps] = useState<boolean>(false);
+  const [aisVessels, setAisVessels] = useState<LiveAisVessel[]>([]);
+  const [aisStatus, setAisStatus] = useState<AisFeedStatus | null>(null);
+  const [isRefreshingAis, setIsRefreshingAis] = useState<boolean>(false);
+
+  // Load AIS Live Vessels
+  const loadAisData = useCallback(async () => {
+    setIsRefreshingAis(true);
+    try {
+      const data = await fetchLiveAisVessels();
+      setAisVessels(data.vessels);
+      setAisStatus(data.status);
+    } catch (e) {
+      console.error('Erro ao buscar AIS:', e);
+    } finally {
+      setIsRefreshingAis(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAisData();
+    const interval = setInterval(loadAisData, 30000); // 30s auto-refresh
+    return () => clearInterval(interval);
+  }, [loadAisData]);
 
   // Request Real Device GPS Location
   const requestDeviceLocation = useCallback(() => {
@@ -352,14 +383,106 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
         opacity: 0.4,
       }).addTo(map);
     }
-  }, [port, mapType, userLocation, showRangeRings, tideState.currentHeight]);
+
+    // 2. Render Live AIS Vessels on Map
+    if (showAisLayer && aisVessels.length > 0) {
+      aisVessels.forEach((vsl) => {
+        const isShip = vsl.type === 'navio';
+        const isBarge = vsl.type === 'barcaca';
+        const isTug = vsl.type === 'rebocador';
+        const color = isShip ? '#38bdf8' : isBarge ? '#34d399' : isTug ? '#fbbf24' : '#c084fc';
+        const emoji = isShip ? '🚢' : isBarge ? '⛴️' : isTug ? '⚓' : '🛥️';
+
+        const vesselIcon = L.divIcon({
+          className: 'ais-vessel-marker',
+          html: `
+            <div style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+              <!-- Vessel Heading Arrow / Icon -->
+              <div style="
+                width: 32px; 
+                height: 32px; 
+                border-radius: 8px; 
+                background: #0f172a; 
+                border: 2px solid ${color}; 
+                box-shadow: 0 4px 12px rgba(0,0,0,0.6); 
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+                transform: rotate(${vsl.heading}deg);
+                transition: transform 0.5s ease;
+              ">
+                <span style="font-size: 14px; transform: rotate(-${vsl.heading}deg);">${emoji}</span>
+              </div>
+              <!-- Vessel Small Label -->
+              <div style="
+                margin-top: 2px;
+                padding: 1px 4px;
+                background: rgba(15, 23, 42, 0.9);
+                border: 1px solid ${color}40;
+                border-radius: 4px;
+                font-family: monospace;
+                font-size: 9px;
+                font-weight: bold;
+                color: ${color};
+                white-space: nowrap;
+                text-shadow: 0 1px 2px #000;
+              ">
+                ${vsl.name.replace('BARCAÇA ', '').replace('REBOCADOR ', '')} (${vsl.speedKnots}kt)
+              </div>
+            </div>
+          `,
+          iconSize: [80, 44],
+          iconAnchor: [40, 22],
+        });
+
+        const marker = L.marker([vsl.lat, vsl.lng], { icon: vesselIcon }).addTo(map);
+
+        marker.bindPopup(`
+          <div style="font-family: sans-serif; color: #0f172a; padding: 6px; min-width: 230px;">
+            <div style="display: flex; items-center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px;">
+              <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">
+                ${vsl.typeName}
+              </span>
+              <span style="font-size: 11px;">${vsl.flag}</span>
+            </div>
+
+            <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: bold; color: #0f172a;">
+              ${vsl.name}
+            </h3>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; margin-bottom: 6px; background: #f8fafc; padding: 6px; border-radius: 6px;">
+              <div><strong>Velocidade:</strong> ${vsl.speedKnots} nós</div>
+              <div><strong>Rumo (COG):</strong> ${vsl.heading}°</div>
+              <div><strong>Calado:</strong> ${vsl.draftMeters} m</div>
+              <div><strong>MMSI:</strong> ${vsl.mmsi}</div>
+            </div>
+
+            <p style="margin: 2px 0; font-size: 11px; color: #334155;">
+              <strong>Destino:</strong> ${vsl.destination}
+            </p>
+            <p style="margin: 2px 0; font-size: 11px; color: #334155;">
+              <strong>Previsão (ETA):</strong> ${vsl.eta}
+            </p>
+            <p style="margin: 2px 0; font-size: 11px; color: #334155;">
+              <strong>Carga/Status:</strong> ${vsl.cargo || vsl.status}
+            </p>
+
+            <div style="margin-top: 6px; padding-top: 4px; border-top: 1px solid #e2e8f0; font-size: 10px; color: #64748b; display: flex; justify-content: space-between;">
+              <span>🛰️ ${vsl.source}</span>
+              <span>TERMISA: <strong>${vsl.distanceToTermisaNM ?? '-'} NM</strong></span>
+            </div>
+          </div>
+        `);
+      });
+    }
+  }, [port, mapType, userLocation, showRangeRings, showAisLayer, aisVessels, tideState.currentHeight]);
 
   return (
     <div className="bg-slate-900/90 rounded-xl sm:rounded-2xl border border-slate-800 p-2.5 sm:p-5 shadow-xl text-slate-100 space-y-3">
       {/* Top Action Bar */}
       <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-800">
         {/* GPS Status / Current Coords */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <button
             onClick={requestDeviceLocation}
             disabled={isLocating}
@@ -378,13 +501,42 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
             <span>{isLocating ? 'Buscando GPS...' : isRealGps ? 'GPS em Tempo Real' : 'Ativar GPS Real'}</span>
           </button>
 
-          <span className="text-xs font-mono text-slate-300 truncate hidden xs:inline">
-            {userLocation.dmsLat} {userLocation.dmsLng}
-          </span>
+          {/* AIS Live Satellite Status Indicator */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-950/90 border border-slate-800 rounded-lg text-xs">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <Radio className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="font-mono text-slate-300 hidden sm:inline">AIS Satélite:</span>
+            <span className="font-bold text-cyan-300 font-mono">{aisVessels.length} navios</span>
+            <button
+              onClick={loadAisData}
+              disabled={isRefreshingAis}
+              className="ml-1 p-0.5 text-slate-400 hover:text-cyan-300 transition"
+              title="Atualizar dados de satélite AIS agora"
+            >
+              <RefreshCw className={`w-3 h-3 ${isRefreshingAis ? 'animate-spin text-cyan-400' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* Map Controls */}
         <div className="flex items-center gap-2">
+          {/* Toggle AIS Layer */}
+          <button
+            onClick={() => setShowAisLayer(!showAisLayer)}
+            className={`px-2.5 py-1 rounded-lg border text-[11px] sm:text-xs font-medium flex items-center gap-1.5 transition ${
+              showAisLayer
+                ? 'bg-cyan-950/70 border-cyan-500/60 text-cyan-300'
+                : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+            }`}
+            title="Exibir ou ocultar navios no mapa"
+          >
+            {showAisLayer ? <Eye className="w-3.5 h-3.5 text-cyan-400" /> : <EyeOff className="w-3.5 h-3.5 text-slate-500" />}
+            <span>{showAisLayer ? 'Navios Ativos' : 'Navios Ocultos'}</span>
+          </button>
+
           <div className="flex items-center p-0.5 sm:p-1 bg-slate-950 rounded-lg border border-slate-800 text-[11px] sm:text-xs">
             <button
               onClick={() => setMapType('satellite')}
@@ -503,12 +655,20 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
             Sua Posição
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" />
-            TERMISA (Ilha)
+            <span className="w-2 h-2 rounded-full bg-sky-400 inline-block" />
+            🚢 Navio (AIS)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+            ⛴️ Barcaça
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-            Ponta do Upanema
+            ⚓ Rebocador
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-sky-500 inline-block" />
+            TERMISA (Ilha)
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block" />
@@ -517,7 +677,7 @@ export const InteractiveNauticalMap: React.FC<InteractiveNauticalMapProps> = ({
         </div>
 
         <span className="text-slate-500 font-mono text-[10px]">
-          WGS84 • GPS em Tempo Real
+          WGS84 • AIS Satélite Ativo
         </span>
       </div>
     </div>

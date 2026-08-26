@@ -37,12 +37,11 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
 
   const monthName = selectedDate.toLocaleDateString('pt-BR', { month: 'long' });
 
-  // Navios operando ou finalizados no mês selecionado
-  const monthVessels = SALT_SHIPMENTS_2026.filter((v) => v.month === month);
-  const operatingVesselsInMonth = monthVessels.filter((v) => v.status === 'Em operação');
-  const concludedVesselsInMonth = monthVessels.filter((v) => v.status === 'Concluído');
-  const relevantMonthVessels = [...operatingVesselsInMonth, ...concludedVesselsInMonth];
-  const monthTotalTons = relevantMonthVessels.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+  // Navios finalizados no mês selecionado
+  const concludedVesselsInMonth = SALT_SHIPMENTS_2026.filter(
+    (v) => v.month === month && v.status === 'Concluído'
+  );
+  const monthTotalTons = concludedVesselsInMonth.reduce((acc, v) => acc + v.totalVolumeTons, 0);
 
   const getMoonText = () => {
     switch (dayTides.moonPhase) {
@@ -82,17 +81,17 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
       msg += `• Alvorada Náutica: *${weather.nauticalDawn}* | Crepúsculo: *${weather.nauticalDusk}*\n`;
     }
 
-    if (relevantMonthVessels.length > 0) {
-      msg += `\n🚢 *NAVIOS NO MÊS (${monthName.toUpperCase()}/${year}):*\n`;
-      relevantMonthVessels.forEach((v) => {
+    if (concludedVesselsInMonth.length > 0) {
+      msg += `\n🚢 *NAVIOS FINALIZADOS NO MÊS (${monthName.toUpperCase()}/${year}):*\n`;
+      concludedVesselsInMonth.forEach((v) => {
         const typeBreakdown = v.scVolumeTons > 0 && v.sqVolumeTons > 0
           ? ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')} | SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
           : v.sqVolumeTons > 0
           ? ` [SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
           : ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')}]`;
-        msg += `• *${v.vesselName}* (${v.visitCode} • ${v.dwt.toLocaleString('pt-BR')} DWT) • ${v.totalVolumeTons.toLocaleString('pt-BR')} t${typeBreakdown} (${v.shipper} - ${v.trafficLabel}) [${v.status}]\n`;
+        msg += `• *${v.vesselName}* (${v.visitCode} • ${v.dwt.toLocaleString('pt-BR')} DWT) • ${v.totalVolumeTons.toLocaleString('pt-BR')}${typeBreakdown} (${v.shipper} - ${v.trafficLabel})\n`;
       });
-      msg += `*Total Carregado/Programado:* ${monthTotalTons.toLocaleString('pt-BR')} t (${relevantMonthVessels.length} navios)\n`;
+      msg += `*Total Carregado:* ${monthTotalTons.toLocaleString('pt-BR')} (${concludedVesselsInMonth.length} navios)\n`;
     }
 
     msg += `\n⚓ *CONDIÇÃO DA BARRA & RECOMENDAÇÕES:*\n`;
@@ -299,19 +298,19 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
           </div>
         )}
 
-        {/* Vessels in Month Section (Operating & Concluded) */}
+        {/* Concluded Vessels in Month Section */}
         <div>
           <div className="flex items-center justify-between mb-2.5">
             <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5 font-mono">
               <Ship className="w-4 h-4 text-emerald-400" />
-              4. NAVIOS OPERANDO / FINALIZADOS NO MÊS ({monthName.toUpperCase()} / {year})
+              4. NAVIOS FINALIZADOS NO MÊS ({monthName.toUpperCase()} / {year})
             </h3>
             <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/50 px-2.5 py-0.5 rounded-md">
-              {relevantMonthVessels.length} navio(s) • {monthTotalTons.toLocaleString('pt-BR')} t
+              {concludedVesselsInMonth.length} navio(s) • {monthTotalTons.toLocaleString('pt-BR')}
             </span>
           </div>
 
-          {relevantMonthVessels.length > 0 ? (
+          {concludedVesselsInMonth.length > 0 ? (
             <div className="overflow-x-auto rounded-xl border border-slate-800">
               <table className="w-full text-xs font-mono text-left">
                 <thead className="bg-slate-900 text-slate-400 border-b border-slate-800 text-[11px]">
@@ -324,7 +323,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
-                  {relevantMonthVessels.map((vessel) => (
+                  {concludedVesselsInMonth.map((vessel) => (
                     <tr key={vessel.id} className="hover:bg-slate-900/40">
                       <td className="p-2.5">
                         <span className="font-bold text-white block">{vessel.vesselName}</span>
@@ -334,10 +333,10 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
                       </td>
                       <td className="p-2.5 text-slate-300">
                         <span className="block text-[11px]">{vessel.etb}</span>
-                        <span className="text-[10px] text-slate-400">{vessel.status === 'Em operação' ? `previsto até ${vessel.etd}` : `até ${vessel.etd}`}</span>
+                        <span className="text-[10px] text-slate-400">até {vessel.etd}</span>
                       </td>
                       <td className="p-2.5">
-                        <span className="font-bold text-emerald-400 block">{vessel.totalVolumeTons.toLocaleString('pt-BR')} t</span>
+                        <span className="font-bold text-emerald-400 block">{vessel.totalVolumeTons.toLocaleString('pt-BR')}</span>
                         <span className="text-[10px] text-slate-400">
                           {vessel.scVolumeTons > 0 && vessel.sqVolumeTons > 0
                             ? `SC: ${vessel.scVolumeTons.toLocaleString('pt-BR')} | SQ: ${vessel.sqVolumeTons.toLocaleString('pt-BR')}`
@@ -351,17 +350,10 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
                         <span className="text-slate-400 text-[10px] block">{vessel.trafficLabel}</span>
                       </td>
                       <td className="p-2.5 text-right">
-                        {vessel.status === 'Em operação' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-700/60">
-                            <Ship className="w-3 h-3 text-amber-400 animate-pulse" />
-                            Em operação
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                            Concluído
-                          </span>
-                        )}
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700/60">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          Concluído
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -370,7 +362,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
             </div>
           ) : (
             <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-center text-xs font-mono text-slate-400">
-              Nenhum navio operado ou em operação registrado para este mês.
+              Nenhum navio finalizado registrado para este mês.
             </div>
           )}
         </div>

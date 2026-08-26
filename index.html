@@ -41,21 +41,10 @@
     <meta name="twitter:title" content="Controle de Marés - Areia Branca & Macau" />
     <meta name="twitter:description" content="Controle de Marés - Areia Branca & Macau - RN. Monitoramento em tempo real, tábuas da DHN 2026, cálculo de calado e tráfego marítimo AIS." />
     <meta name="twitter:image" content="https://tsicontrole.com/mares/og-image.png" />
-
-    <link rel="stylesheet" crossorigin href="./assets/index.css" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script type="module">
-      // Fallback para servidor Apache estático caso o Vite não esteja rodando
-      if (typeof window !== 'undefined' && !window.__vite_plugin_react_preamble_installed__ && !location.hostname.includes('run.app') && location.port !== '3000' && location.hostname !== 'localhost') {
-        const script = document.createElement('script');
-        script.type = 'module';
-        script.crossOrigin = '';
-        script.src = './assets/index.js';
-        document.body.appendChild(script);
-      }
-    </script>
   </body>
 </html>
+

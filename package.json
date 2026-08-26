@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && node scripts/post-build.js",
+    "build": "vite build && mkdir -p assets production/assets && cp -rf dist/assets/* assets/ && cp -rf dist/* production/ && cp dist/assets/* production/assets/ && cp dist/.htaccess production/.htaccess && cp public/logo.svg assets/logo.svg && cp public/logo.svg production/logo.svg",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit --skipLibCheck"

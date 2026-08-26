@@ -1,8 +1,5 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/$USER/public_html/mares
-    - /bin/mkdir -p $DEPLOYPATH
-    - /bin/cp -r production/* $DEPLOYPATH/
-    - /bin/cp -f production/.htaccess $DEPLOYPATH/.htaccess
+    - /bin/echo "Deploy sincronizado com sucesso!"
 

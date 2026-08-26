@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Anchor,
   ArrowDownUp,
@@ -20,14 +20,24 @@ import {
   TrendingUp,
   Waves,
   Sparkles,
+  Radio,
+  RefreshCw,
+  SlidersHorizontal,
+  Key,
 } from 'lucide-react';
 import {
   SALT_SHIPMENTS_2026,
   MONTHLY_SALT_SUMMARIES,
   OVERALL_TOTALS,
-  LINEUP_LAST_UPDATED,
   SaltVesselRecord,
 } from '../data/saltShipmentsData';
+import {
+  fetchLiveAisVessels,
+  LiveAisVessel,
+  AisFeedStatus,
+  getStoredAisApiKey,
+  setStoredAisApiKey,
+} from '../services/vesselAisService';
 
 interface SaltShipmentsDashboardProps {
   onSelectVesselOnMap?: (vesselName: string) => void;
@@ -37,30 +47,64 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
   const [selectedMonth, setSelectedMonth] = useState<number | 'ALL'>('ALL');
   const [selectedShipper, setSelectedShipper] = useState<'ALL' | 'SALINOR' | 'SDB'>('ALL');
   const [selectedTraffic, setSelectedTraffic] = useState<'ALL' | 'EXP' | 'CBT'>('ALL');
-  const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'Concluído' | 'Em operação' | 'Previsto'>('ALL');
+  const [selectedStatus, setSelectedStatus] = useState<'ALL' | 'Concluído' | 'Previsto'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortField, setSortField] = useState<'etb' | 'totalVolumeTons' | 'loaMeters' | 'vesselName'>('etb');
   const [sortAsc, setSortAsc] = useState<boolean>(true);
   const [copiedNotification, setCopiedNotification] = useState<boolean>(false);
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null);
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
-  const [timelineMonth, setTimelineMonth] = useState<number>(8); // Default to August 2026 (latest month with Concluded, Operating, and Planned vessels)
+  const [timelineMonth, setTimelineMonth] = useState<number>(8); // Default to August 2026 (latest month with both Concluded and Planned vessels)
+  const [liveAisVessels, setLiveAisVessels] = useState<LiveAisVessel[]>([]);
+  const [aisStatus, setAisStatus] = useState<AisFeedStatus | null>(null);
+  const [isRefreshingAis, setIsRefreshingAis] = useState<boolean>(false);
+  const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
+  const [apiKeyInput, setApiKeyInput] = useState<string>(getStoredAisApiKey() || '');
+  const [apiKeySavedMsg, setApiKeySavedMsg] = useState<string | null>(null);
 
-  // Timeline month details & vessels separated by Operating (first), Planned (second), and Concluded (below)
+  // Load AIS Live Stream
+  const loadAis = async () => {
+    setIsRefreshingAis(true);
+    try {
+      const data = await fetchLiveAisVessels();
+      setLiveAisVessels(data.vessels.filter((v) => v.type === 'navio'));
+      setAisStatus(data.status);
+    } catch (e) {
+      console.error('Erro ao carregar AIS:', e);
+    } finally {
+      setIsRefreshingAis(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAis();
+    const interval = setInterval(loadAis, 45000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSaveApiKey = () => {
+    setStoredAisApiKey(apiKeyInput);
+    setApiKeySavedMsg('Configuração AIS salva com sucesso!');
+    loadAis();
+    setTimeout(() => {
+      setApiKeySavedMsg(null);
+      setShowApiKeyModal(false);
+    }, 1500);
+  };
+
+  // Timeline month details & vessels separated by Planned (first) and Concluded (below)
   const timelineMonthInfo = useMemo(() => {
     return MONTHLY_SALT_SUMMARIES.find((m) => m.month === timelineMonth) || MONTHLY_SALT_SUMMARIES[7];
   }, [timelineMonth]);
 
   const timelineVessels = useMemo(() => {
     const list = SALT_SHIPMENTS_2026.filter((v) => v.month === timelineMonth);
-    const operating = list.filter((v) => v.status === 'Em operação');
     const planned = list.filter((v) => v.status === 'Previsto');
     const concluded = list.filter((v) => v.status === 'Concluído');
     return {
-      operating,
       planned,
       concluded,
-      all: [...operating, ...planned, ...concluded],
+      all: [...planned, ...concluded],
       totalCount: list.length,
     };
   }, [timelineMonth]);
@@ -96,66 +140,41 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
     });
   }, [selectedMonth, selectedShipper, selectedTraffic, selectedStatus, searchQuery, sortField, sortAsc]);
 
-  // Concluded, Operating, and Planned vessels partition
+  // Concluded and Planned vessels partition
   const concludedFilteredVessels = useMemo(() => {
     return filteredVessels.filter((v) => v.status === 'Concluído');
-  }, [filteredVessels]);
-
-  const operatingFilteredVessels = useMemo(() => {
-    return filteredVessels.filter((v) => v.status === 'Em operação');
   }, [filteredVessels]);
 
   const plannedFilteredVessels = useMemo(() => {
     return filteredVessels.filter((v) => v.status === 'Previsto');
   }, [filteredVessels]);
 
-  // Aggregated totals of filtered selection
+  // Aggregated totals of filtered selection (Volumes and executed quantities strictly from Concluído)
   const filteredTotals = useMemo(() => {
-    const concludedList = filteredVessels.filter((v) => v.status === 'Concluído');
-    const operatingList = filteredVessels.filter((v) => v.status === 'Em operação');
-    const plannedList = filteredVessels.filter((v) => v.status === 'Previsto');
+    // If user explicitly chooses 'Previsto', calculate for planned; otherwise calculate strictly for concluded vessels
+    const targetList = selectedStatus === 'Previsto' ? plannedFilteredVessels : (selectedStatus === 'Concluído' ? filteredVessels : concludedFilteredVessels);
 
-    // If 'ALL' is selected, metrics represent effectively concluded/shipped volume
-    const activeList =
-      selectedStatus === 'ALL'
-        ? concludedList
-        : selectedStatus === 'Em operação'
-        ? operatingList
-        : selectedStatus === 'Previsto'
-        ? plannedList
-        : concludedList;
-
-    const totalVolume = activeList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const scTotal = activeList.reduce((acc, v) => acc + v.scVolumeTons, 0);
-    const sqTotal = activeList.reduce((acc, v) => acc + v.sqVolumeTons, 0);
-    const salinorVolume = activeList.filter((v) => v.shipper === 'SALINOR').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const sdbVolume = activeList.filter((v) => v.shipper === 'SDB').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const expVolume = activeList.filter((v) => v.trafficType === 'EXP').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const cbtVolume = activeList.filter((v) => v.trafficType === 'CBT').reduce((acc, v) => acc + v.totalVolumeTons, 0);
-
-    const concludedVolume = concludedList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const operatingVolume = operatingList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
-    const plannedVolume = plannedList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const totalVolume = targetList.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const scTotal = targetList.reduce((acc, v) => acc + v.scVolumeTons, 0);
+    const sqTotal = targetList.reduce((acc, v) => acc + v.sqVolumeTons, 0);
+    const salinorVolume = targetList.filter((v) => v.shipper === 'SALINOR').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const sdbVolume = targetList.filter((v) => v.shipper === 'SDB').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const expVolume = targetList.filter((v) => v.trafficType === 'EXP').reduce((acc, v) => acc + v.totalVolumeTons, 0);
+    const cbtVolume = targetList.filter((v) => v.trafficType === 'CBT').reduce((acc, v) => acc + v.totalVolumeTons, 0);
 
     return {
       totalVolume,
-      concludedVolume,
-      operatingVolume,
-      plannedVolume,
-      concludedSc: concludedList.reduce((acc, v) => acc + v.scVolumeTons, 0),
-      concludedSq: concludedList.reduce((acc, v) => acc + v.sqVolumeTons, 0),
       scTotal,
       sqTotal,
-      vesselCount: activeList.length,
+      vesselCount: targetList.length,
       salinorVolume,
       sdbVolume,
       expVolume,
       cbtVolume,
-      concludedCount: concludedList.length,
-      operatingCount: operatingList.length,
-      plannedCount: plannedList.length,
+      concludedCount: concludedFilteredVessels.length,
+      plannedCount: plannedFilteredVessels.length,
     };
-  }, [filteredVessels, selectedStatus]);
+  }, [filteredVessels, concludedFilteredVessels, plannedFilteredVessels, selectedStatus]);
 
   // Copy formatted WhatsApp report
   const handleCopyWhatsAppReport = () => {
@@ -163,32 +182,25 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
     
     let text = `⚓ *INTERSAL - RELATÓRIO DE EMBARQUE DE SAL (TERMISA)*\n`;
     text += `📅 *Período:* ${monthLabel}\n`;
-    text += `🕒 *Atualizado em:* ${LINEUP_LAST_UPDATED}\n`;
-    text += `🚢 *Total de Navios:* ${filteredTotals.concludedCount} Concluídos${filteredTotals.operatingCount > 0 ? ` + ${filteredTotals.operatingCount} Em operação` : ''}${filteredTotals.plannedCount > 0 ? ` + ${filteredTotals.plannedCount} Previsto(s)` : ''}\n`;
-    text += `✅ *Total Embarcado:* ${filteredTotals.concludedVolume.toLocaleString('pt-BR')} t\n`;
-    if (filteredTotals.operatingCount > 0) {
-      text += `⏳ *Em Operação:* ${filteredTotals.operatingVolume.toLocaleString('pt-BR')} t\n`;
-    }
-    if (filteredTotals.plannedCount > 0) {
-      text += `🕒 *Previsto:* ${filteredTotals.plannedVolume.toLocaleString('pt-BR')} t\n`;
-    }
-    text += `  • Sal Comum (SC): ${filteredTotals.concludedSc.toLocaleString('pt-BR')} t (${((filteredTotals.concludedSc / (filteredTotals.concludedVolume || 1)) * 100).toFixed(1)}%)\n`;
-    text += `  • Sal Químico (SQ): ${filteredTotals.concludedSq.toLocaleString('pt-BR')} t (${((filteredTotals.concludedSq / (filteredTotals.concludedVolume || 1)) * 100).toFixed(1)}%)\n\n`;
+    text += `🚢 *Navios Concluídos:* ${filteredTotals.vesselCount}\n`;
+    text += `📦 *Total Embarcado:* ${filteredTotals.totalVolume.toLocaleString('pt-BR')}\n`;
+    text += `  • Sal Comum (SC): ${filteredTotals.scTotal.toLocaleString('pt-BR')} (${((filteredTotals.scTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)\n`;
+    text += `  • Sal Químico (SQ): ${filteredTotals.sqTotal.toLocaleString('pt-BR')} (${((filteredTotals.sqTotal / (filteredTotals.totalVolume || 1)) * 100).toFixed(1)}%)\n\n`;
     text += `🏢 *Por Salineira:*\n`;
-    text += `  • SALINOR: ${filteredTotals.salinorVolume.toLocaleString('pt-BR')} t\n`;
-    text += `  • SDB: ${filteredTotals.sdbVolume.toLocaleString('pt-BR')} t\n\n`;
+    text += `  • SALINOR: ${filteredTotals.salinorVolume.toLocaleString('pt-BR')}\n`;
+    text += `  • SDB: ${filteredTotals.sdbVolume.toLocaleString('pt-BR')}\n\n`;
     text += `🌐 *Por Tráfego:*\n`;
-    text += `  • Exportação (EXP): ${filteredTotals.expVolume.toLocaleString('pt-BR')} t\n`;
-    text += `  • Cabotagem (CBT): ${filteredTotals.cbtVolume.toLocaleString('pt-BR')} t\n\n`;
-    text += `📋 *Line-up de Navios:*\n`;
+    text += `  • Exportação (EXP): ${filteredTotals.expVolume.toLocaleString('pt-BR')}\n`;
+    text += `  • Cabotagem (CBT): ${filteredTotals.cbtVolume.toLocaleString('pt-BR')}\n\n`;
+    text += `📋 *Line-up de Navios Concluídos:*\n`;
 
-    filteredVessels.forEach((v, idx) => {
+    (selectedStatus === 'Previsto' ? plannedFilteredVessels : concludedFilteredVessels).forEach((v, idx) => {
       const typeBreakdown = v.scVolumeTons > 0 && v.sqVolumeTons > 0
         ? ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')} | SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
         : v.sqVolumeTons > 0
         ? ` [SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
         : ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')}]`;
-      text += `${idx + 1}. *${v.vesselName}* (${v.visitCode} • ${v.dwt.toLocaleString('pt-BR')} DWT • ${v.shipper} - ${v.trafficType}) | ${v.totalVolumeTons.toLocaleString('pt-BR')} t${typeBreakdown} • ETB: ${v.etb.split(' ')[0]} • Status: [${v.status}]\n`;
+      text += `${idx + 1}. *${v.vesselName}* (${v.visitCode} • ${v.dwt.toLocaleString('pt-BR')} DWT • ${v.shipper} - ${v.trafficType}) | ${v.totalVolumeTons.toLocaleString('pt-BR')}${typeBreakdown} • ETB: ${v.etb.split(' ')[0]} • Status: ${v.status}\n`;
     });
 
     text += `\n_Fonte: Sistema de Monitoramento INTERSAL / DHN 2026_`;
@@ -199,6 +211,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
   };
 
   const maxMonthlyVolume = Math.max(...MONTHLY_SALT_SUMMARIES.map((m) => m.totalVolume));
+  const plannedVessels = useMemo(() => SALT_SHIPMENTS_2026.filter((v) => v.status === 'Previsto'), []);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -219,19 +232,97 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                 <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold">
                   Jan a Ago / 2026
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-slate-950/90 text-cyan-300 border border-cyan-500/40 text-[10px] font-mono font-medium flex items-center gap-1">
-                  <Clock className="w-2.5 h-2.5 text-cyan-400" />
-                  Atualizado: {LINEUP_LAST_UPDATED}
+                <span className="px-2 py-0.5 rounded-full bg-sky-950/90 text-sky-300 border border-sky-500/40 text-[10px] font-semibold flex items-center gap-1">
+                  <Radio className="w-2.5 h-2.5 text-sky-400 animate-pulse" />
+                  AIS Satélite Ao Vivo
                 </span>
               </div>
               <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
-                Painel de Embarque de Sal (Line-Up)
+                Painel de Embarque
               </h1>
             </div>
           </div>
+
+          {/* AIS Live Satellite Quick Action */}
+          <div className="flex items-center gap-2 self-start lg:self-auto">
+            <button
+              onClick={loadAis}
+              disabled={isRefreshingAis}
+              className="px-3 py-1.5 rounded-xl bg-slate-950/90 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition shadow-sm"
+              title="Sincronizar telemetria AIS agora"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${isRefreshingAis ? 'animate-spin' : ''}`} />
+              <span>{isRefreshingAis ? 'Sincronizando...' : 'Atualizar AIS'}</span>
+            </button>
+            <button
+              onClick={() => setShowApiKeyModal(true)}
+              className="px-3 py-1.5 rounded-xl bg-cyan-950/70 hover:bg-cyan-900/80 border border-cyan-500/40 text-cyan-300 text-xs font-medium flex items-center gap-1.5 transition shadow-sm"
+              title="Configurar Feed / API Externa de AIS"
+            >
+              <Key className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Configurar API</span>
+            </button>
+          </div>
         </div>
 
-        {/* Embedded Chronological Schedule & Vessels Box (Operating, Planned & Concluded) with Month Navigation */}
+        {/* Live AIS Vessels Radar Strip */}
+        <div className="relative z-10 mt-4 p-3 bg-slate-950/80 rounded-xl border border-slate-800/90 space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="font-bold text-slate-200">Radar AIS Costa Branca (Ao Vivo):</span>
+              <span className="text-slate-400 font-mono text-[11px]">
+                {aisStatus ? `${aisStatus.sourceName}` : 'Conectando satélite...'}
+              </span>
+            </div>
+            <span className="text-[11px] font-mono text-cyan-400">
+              {liveAisVessels.length} navios mercantes na bacia
+            </span>
+          </div>
+
+          {/* Mini Cards of Tracked Ships */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1">
+            {liveAisVessels.map((vsl) => (
+              <div
+                key={vsl.id}
+                className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between gap-1.5"
+              >
+                <div className="flex items-start justify-between gap-1">
+                  <div className="min-w-0">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-cyan-400 block truncate">
+                      {vsl.typeName}
+                    </span>
+                    <h4 className="text-xs font-bold text-white truncate">{vsl.name}</h4>
+                  </div>
+                  <span className="text-xs shrink-0">{vsl.flag}</span>
+                </div>
+
+                <div className="text-[11px] font-mono text-slate-300 grid grid-cols-2 gap-1 bg-slate-950/60 p-1.5 rounded">
+                  <div>
+                    <span className="text-slate-500 text-[9px] block">VELOCIDADE</span>
+                    <strong className="text-cyan-300">{vsl.speedKnots} nós</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 text-[9px] block">DIST. TERMISA</span>
+                    <strong className="text-emerald-300">{vsl.distanceToTermisaNM ?? '-'} NM</strong>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-slate-400 flex items-center justify-between pt-0.5">
+                  <span className="truncate">ETA: <strong className="text-slate-200">{vsl.eta.split(' ')[0]}</strong></span>
+                  <span className="px-1.5 py-0.5 rounded bg-slate-800 text-[9px] text-slate-300">
+                    {vsl.status.includes('Atracado') ? 'No Cais' : vsl.status.includes('Fundeado') ? 'Fundeado' : 'Em Rota'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Embedded Chronological Schedule & Vessels Box (Concluded & Planned) with Month Navigation */}
         <div className="relative z-10 mt-4 pt-4 border-t border-slate-800/80 space-y-3">
           {/* Navigation Bar: Mês Anterior, Current Month, Próximo Mês */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-1">
@@ -302,100 +393,15 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
             })}
           </div>
 
-          {/* Group 1: Operating Vessels (Em operação) */}
-          {timelineVessels.operating.length > 0 && (
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center justify-between gap-2 px-1">
-                <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Ship className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                  Navios Em Operação no Porto
-                </span>
-                <span className="text-[10px] text-amber-300/80 font-mono">
-                  {timelineVessels.operating.length} {timelineVessels.operating.length === 1 ? 'navio' : 'navios'}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {timelineVessels.operating.map((v) => (
-                  <div
-                    key={v.id}
-                    className="p-3 rounded-xl bg-slate-950/90 border border-amber-500/60 hover:border-amber-400 transition shadow-md flex flex-col justify-between group"
-                  >
-                    {/* Top Vessel Info */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-white text-xs sm:text-sm group-hover:text-amber-300 transition flex items-center gap-1.5">
-                            <Ship className="w-3.5 h-3.5 text-amber-400" />
-                            {v.vesselName}
-                          </span>
-                          <span className="px-1.5 py-0.5 rounded bg-amber-950/90 border border-amber-500/60 text-[9px] font-bold text-amber-300 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping inline-block" />
-                            Em operação
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-cyan-400 font-mono">
-                          <span>{v.visitCode}</span>
-                          <span>•</span>
-                          <span className="text-slate-300 font-semibold">{v.shipper}</span>
-                          <span>({v.trafficType})</span>
-                          <span>•</span>
-                          <span className="text-slate-400">{v.loaMeters.toFixed(1)}m LOA • {v.dwt.toLocaleString('pt-BR')} DWT</span>
-                        </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="text-xs sm:text-sm font-bold text-white font-mono block">
-                          {v.totalVolumeTons.toLocaleString('pt-BR')} t
-                        </span>
-                        <span className="text-[9px] text-slate-400 block">
-                          {v.sqVolumeTons > 0 && v.scVolumeTons > 0
-                            ? `SC: ${(v.scVolumeTons / 1000).toFixed(0)}k | SQ: ${(v.sqVolumeTons / 1000).toFixed(0)}k`
-                            : v.sqVolumeTons > 0
-                            ? 'Sal Químico (SQ)'
-                            : 'Sal Comum (SC)'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* 3 Chronological Time Blocks: ETA -> ETB -> ETD */}
-                    <div className="mt-2.5 pt-2 border-t border-slate-800/80 grid grid-cols-3 gap-1 text-[10px] font-mono">
-                      <div className="bg-slate-900/60 p-1.5 rounded-lg border border-slate-800">
-                        <span className="text-slate-500 text-[9px] block uppercase font-sans font-medium">ETA</span>
-                        <span className="text-slate-200 font-bold">{v.eta.split(' ')[0]}</span>
-                        <span className="text-slate-400 text-[9px] block">{v.eta.split(' ')[1]}</span>
-                      </div>
-
-                      <div className="p-1.5 rounded-lg border bg-amber-950/40 border-amber-500/50 text-amber-300">
-                        <span className="text-[9px] block uppercase font-sans font-bold text-amber-400">
-                          ETB Atracação
-                        </span>
-                        <span className="font-bold text-white">{v.etb.split(' ')[0]}</span>
-                        <span className="text-[9px] block text-amber-400">{v.etb.split(' ')[1]}</span>
-                      </div>
-
-                      <div className="bg-slate-900/60 p-1.5 rounded-lg border border-slate-800">
-                        <span className="text-slate-500 text-[9px] block uppercase font-sans font-medium">ETD Previsto</span>
-                        <span className="text-slate-200 font-bold">{v.etd.split(' ')[0]}</span>
-                        <span className="text-slate-400 text-[9px] block">{v.etd.split(' ')[1]}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Group 2: Planned Vessels (Previstos) */}
+          {/* Group 1: Planned Vessels (First) */}
           {timelineVessels.planned.length > 0 && (
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between gap-2 px-1">
-                <span className="text-[11px] font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-sky-400" />
+                <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
                   Navios Previstos & Programação
                 </span>
-                <span className="text-[10px] text-sky-300/80 font-mono">
+                <span className="text-[10px] text-amber-300/80 font-mono">
                   {timelineVessels.planned.length} {timelineVessels.planned.length === 1 ? 'navio' : 'navios'}
                 </span>
               </div>
@@ -404,17 +410,17 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                 {timelineVessels.planned.map((v) => (
                   <div
                     key={v.id}
-                    className="p-3 rounded-xl bg-slate-950/85 border border-sky-500/40 hover:border-sky-500/80 transition shadow-md flex flex-col justify-between group"
+                    className="p-3 rounded-xl bg-slate-950/85 border border-amber-500/40 hover:border-amber-500/80 transition shadow-md flex flex-col justify-between group"
                   >
                     {/* Top Vessel Info */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-white text-xs sm:text-sm group-hover:text-cyan-300 transition flex items-center gap-1.5">
-                            <Ship className="w-3.5 h-3.5 text-sky-400" />
+                            <Ship className="w-3.5 h-3.5 text-amber-400" />
                             {v.vesselName}
                           </span>
-                          <span className="px-1.5 py-0.5 rounded bg-sky-950/90 border border-sky-500/50 text-[9px] font-bold text-sky-300 flex items-center gap-1">
+                          <span className="px-1.5 py-0.5 rounded bg-amber-950/90 border border-amber-500/50 text-[9px] font-bold text-amber-300 flex items-center gap-1">
                             <Clock className="w-2.5 h-2.5" />
                             Previsto
                           </span>
@@ -432,7 +438,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
                       <div className="text-right shrink-0">
                         <span className="text-xs sm:text-sm font-bold text-white font-mono block">
-                          {v.totalVolumeTons.toLocaleString('pt-BR')} t
+                          {v.totalVolumeTons.toLocaleString('pt-BR')}
                         </span>
                         <span className="text-[9px] text-slate-400 block">
                           {v.sqVolumeTons > 0 && v.scVolumeTons > 0
@@ -452,12 +458,12 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                         <span className="text-slate-400 text-[9px] block">{v.eta.split(' ')[1]}</span>
                       </div>
 
-                      <div className="p-1.5 rounded-lg border bg-sky-950/30 border-sky-900/50 text-sky-300">
-                        <span className="text-[9px] block uppercase font-sans font-bold text-sky-400">
+                      <div className="p-1.5 rounded-lg border bg-amber-950/30 border-amber-900/50 text-amber-300">
+                        <span className="text-[9px] block uppercase font-sans font-bold text-amber-400">
                           ETB Previsto
                         </span>
                         <span className="font-bold text-white">{v.etb.split(' ')[0]}</span>
-                        <span className="text-[9px] block text-sky-400">{v.etb.split(' ')[1]}</span>
+                        <span className="text-[9px] block text-amber-400">{v.etb.split(' ')[1]}</span>
                       </div>
 
                       <div className="bg-slate-900/60 p-1.5 rounded-lg border border-slate-800">
@@ -472,7 +478,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
             </div>
           )}
 
-          {/* Group 3: Concluded Vessels (Concluídos) */}
+          {/* Group 2: Concluded Vessels (Below) */}
           {timelineVessels.concluded.length > 0 && (
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between gap-2 px-1">
@@ -517,7 +523,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
                       <div className="text-right shrink-0">
                         <span className="text-xs sm:text-sm font-bold text-white font-mono block">
-                          {v.totalVolumeTons.toLocaleString('pt-BR')} t
+                          {v.totalVolumeTons.toLocaleString('pt-BR')}
                         </span>
                         <span className="text-[9px] text-slate-400 block">
                           {v.sqVolumeTons > 0 && v.scVolumeTons > 0
@@ -565,11 +571,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
         <div className="p-3.5 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-bold text-cyan-400 uppercase tracking-wide">
-              {selectedStatus === 'Previsto'
-                ? 'Volume Previsto'
-                : selectedStatus === 'Em operação'
-                ? 'Volume em Operação'
-                : 'Total Embarcado'}
+              {selectedStatus === 'Previsto' ? 'Volume Previsto' : 'Total Embarcado'}
             </span>
             <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400">
               <TrendingUp className="w-4 h-4" />
@@ -577,42 +579,16 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           </div>
           <div className="mt-2 sm:mt-3">
             <div className="text-xl sm:text-3xl font-black text-white tracking-tight">
-              {selectedStatus === 'Previsto'
-                ? filteredTotals.plannedVolume.toLocaleString('pt-BR')
-                : selectedStatus === 'Em operação'
-                ? filteredTotals.operatingVolume.toLocaleString('pt-BR')
-                : filteredTotals.concludedVolume.toLocaleString('pt-BR')}
-              <span className="text-xs sm:text-sm font-semibold text-slate-400 ml-1">t</span>
+              {filteredTotals.totalVolume.toLocaleString('pt-BR')}
             </div>
-            <div className="flex items-center gap-1.5 mt-1 text-[11px] text-slate-400 flex-wrap">
-              {selectedStatus === 'Previsto' ? (
-                <span>{filteredTotals.plannedCount} navio programado</span>
-              ) : selectedStatus === 'Em operação' ? (
-                <span>{filteredTotals.operatingCount} navio em operação</span>
-              ) : (
-                <span>Média: {(filteredTotals.concludedVolume / (selectedMonth === 'ALL' ? 8 : 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} / mês</span>
-              )}
+            <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
+              <span>Média: {(filteredTotals.totalVolume / (selectedMonth === 'ALL' ? 8 : 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} / mês</span>
             </div>
           </div>
           <div className="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
             <div
               className="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${Math.min(
-                  100,
-                  ((selectedStatus === 'Previsto'
-                    ? filteredTotals.plannedVolume
-                    : selectedStatus === 'Em operação'
-                    ? filteredTotals.operatingVolume
-                    : filteredTotals.concludedVolume) /
-                    (selectedStatus === 'Previsto'
-                      ? OVERALL_TOTALS.plannedTons
-                      : selectedStatus === 'Em operação'
-                      ? OVERALL_TOTALS.operatingTons
-                      : OVERALL_TOTALS.concludedTons)) *
-                    100
-                )}%`,
-              }}
+              style={{ width: `${Math.min(100, (filteredTotals.totalVolume / OVERALL_TOTALS.totalTons) * 100)}%` }}
             />
           </div>
         </div>
@@ -661,11 +637,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           </div>
         </div>
 
-        {/* Metric 3: Frota / Navios Concluídos & Em Operação */}
+        {/* Metric 3: Frota / Navios Concluídos */}
         <div className="p-3.5 sm:p-5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-xl relative overflow-hidden flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] sm:text-xs font-bold text-indigo-400 uppercase tracking-wide">
-              {selectedStatus === 'Previsto' ? 'Navios Previstos' : selectedStatus === 'Em operação' ? 'Navios em Operação' : 'Navios no Line-Up'}
+              {selectedStatus === 'Previsto' ? 'Navios Previstos' : 'Navios Concluídos'}
             </span>
             <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
               <Ship className="w-4 h-4" />
@@ -673,28 +649,18 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           </div>
           <div className="mt-2 sm:mt-3">
             <div className="text-xl sm:text-3xl font-black text-white tracking-tight">
-              {selectedStatus === 'Concluído' ? filteredTotals.concludedCount : filteredTotals.vesselCount} <span className="text-xs sm:text-sm font-semibold text-slate-400">navios</span>
+              {filteredTotals.vesselCount} <span className="text-xs sm:text-sm font-semibold text-slate-400">navios</span>
             </div>
             <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
-              <span>
-                Média por navio: {(
-                  (selectedStatus === 'Concluído' ? filteredTotals.concludedVolume : filteredTotals.totalVolume) /
-                  ((selectedStatus === 'Concluído' ? filteredTotals.concludedCount : filteredTotals.vesselCount) || 1)
-                ).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} t
-              </span>
+              <span>Média por navio: {(filteredTotals.totalVolume / (filteredTotals.vesselCount || 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2 flex-wrap">
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2">
             <span className="flex items-center gap-1 text-emerald-400 font-medium">
               <CheckCircle2 className="w-3 h-3" /> {filteredTotals.concludedCount} Concluídos
             </span>
-            {filteredTotals.operatingCount > 0 && (
-              <span className="flex items-center gap-1 text-amber-400 font-medium">
-                <Ship className="w-3 h-3 text-amber-400 animate-pulse" /> {filteredTotals.operatingCount} Em operação
-              </span>
-            )}
             {filteredTotals.plannedCount > 0 && (
-              <span className="flex items-center gap-1 text-sky-400 font-medium">
+              <span className="flex items-center gap-1 text-amber-400 font-medium">
                 <Clock className="w-3 h-3" /> {filteredTotals.plannedCount} Previstos
               </span>
             )}
@@ -1081,7 +1047,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
             <span className="flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Pico de movimentação anual: <strong className="text-white">Maio/2026 (214.650 t)</strong> • Total embarcado concluído: <strong className="text-cyan-400">{OVERALL_TOTALS.concludedTons.toLocaleString('pt-BR')} t</strong> ({OVERALL_TOTALS.concludedVessels} navios)
+              Pico de movimentação anual: <strong className="text-white">Maio/2026 (214.650 t)</strong> • Total acumulado embarcado: <strong className="text-cyan-400">{OVERALL_TOTALS.totalTons.toLocaleString('pt-BR')} t</strong> ({OVERALL_TOTALS.concludedVessels} navios)
             </span>
             {selectedMonth !== 'ALL' && (
               <button
@@ -1228,10 +1194,9 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
               onChange={(e) => setSelectedStatus(e.target.value as any)}
               className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
             >
-              <option value="ALL">Status: Todos ({SALT_SHIPMENTS_2026.length})</option>
-              <option value="Concluído">Status: Concluídos ({SALT_SHIPMENTS_2026.filter(v => v.status === 'Concluído').length})</option>
-              <option value="Em operação">Status: Em operação ({SALT_SHIPMENTS_2026.filter(v => v.status === 'Em operação').length})</option>
-              <option value="Previsto">Status: Previstos ({SALT_SHIPMENTS_2026.filter(v => v.status === 'Previsto').length})</option>
+              <option value="ALL">Status: Todos (34)</option>
+              <option value="Concluído">Status: Concluídos (32)</option>
+              <option value="Previsto">Status: Previstos (2)</option>
             </select>
 
             {/* Shipper Filter */}
@@ -1421,15 +1386,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                           v.status === 'Concluído'
                             ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30'
-                            : v.status === 'Em operação'
-                            ? 'bg-amber-950/90 text-amber-300 border border-amber-500/50'
-                            : 'bg-sky-950/80 text-sky-400 border border-sky-500/30'
+                            : 'bg-amber-950/80 text-amber-400 border border-amber-500/30'
                         }`}
                       >
                         {v.status === 'Concluído' ? (
                           <CheckCircle2 className="w-2.5 h-2.5" />
-                        ) : v.status === 'Em operação' ? (
-                          <Ship className="w-2.5 h-2.5 animate-pulse text-amber-400" />
                         ) : (
                           <Clock className="w-2.5 h-2.5" />
                         )}
@@ -1504,6 +1465,76 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           </table>
         </div>
       </div>
+
+      {/* AIS Feed / API Configuration Modal */}
+      {showApiKeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 text-slate-100 relative">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                  <Radio className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Configurar Provedor AIS Externo</h3>
+                  <p className="text-xs text-slate-400">MarineTraffic, AISHub, VesselFinder ou Feed Próprio</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowApiKeyModal(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-slate-300">
+              <p>
+                O sistema já inclui transmissão contínua de AIS via Satélite e Estações Costeiras para a região da <strong>Costa Branca (TERMISA & Macau)</strong>.
+              </p>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-200 mb-1">
+                  URL do Endpoint JSON / Chave de API AIS (Opcional):
+                </label>
+                <input
+                  type="text"
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  placeholder="https://api.marinetraffic.com/v1/exportvessels/..."
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-500"
+                />
+                <span className="text-[10px] text-slate-500 mt-1 block">
+                  Deixe em branco para usar a rede padrão satelital integrada da INTERSAL.
+                </span>
+              </div>
+
+              {apiKeySavedMsg && (
+                <div className="p-2.5 rounded-lg bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-semibold text-center">
+                  ✅ {apiKeySavedMsg}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowApiKeyModal(false)}
+                className="px-3.5 py-1.5 rounded-xl border border-slate-700 text-slate-300 text-xs hover:bg-slate-800 transition font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveApiKey}
+                className="px-4 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition shadow-md shadow-cyan-900/40"
+              >
+                Salvar Configuração
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
