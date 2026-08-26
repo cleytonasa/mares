@@ -57,8 +57,10 @@ function postBuild() {
       fs.writeFileSync(path.join(rootAssetsDir, 'index.css'), cssContent);
 
       const legacyCss = [
+        'index-ofQvceuS.css',
         'index-CLDiKPBo.css',
-        'index-4W2EZ6qD.css'
+        'index-4W2EZ6qD.css',
+        'index-BDSRvksP.css'
       ];
 
       legacyCss.forEach(h => {
