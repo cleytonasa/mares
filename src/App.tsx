@@ -9,7 +9,6 @@ import { InformativoGenerator } from './components/InformativoGenerator';
 import { AlertSettingsModal } from './components/AlertSettingsModal';
 import { NotificationModal } from './components/NotificationModal';
 import { SaltShipmentsDashboard } from './components/SaltShipmentsDashboard';
-import { NauticalAIAssistant } from './components/NauticalAIAssistant';
 import { PORTS_DATA } from './data/portsData';
 import { PortConfig, WeatherData, AlertThresholds, CustomUserLocation } from './types/maritime';
 import { INITIAL_USER_LOCATION, decimalToDMS } from './data/vesselTrafficData';
@@ -367,14 +366,6 @@ export default function App() {
         onSavePreferences={handleSaveNotifPrefs}
         port={activePort}
         tideState={currentTideState}
-      />
-
-      {/* 🤖 Assistente de IA Náutica para Visitantes */}
-      <NauticalAIAssistant
-        port={activePort}
-        currentTime={effectiveTime}
-        tideState={currentTideState}
-        weather={weather}
       />
     </div>
   );

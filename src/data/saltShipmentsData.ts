@@ -10,7 +10,7 @@ export interface SaltVesselRecord {
   eta: string;
   etb: string;
   etd: string;
-  status: 'Concluído' | 'Previsto';
+  status: 'Concluído' | 'Em operação' | 'Previsto';
   scVolumeTons: number; // Sal Comum (SC)
   sqVolumeTons: number; // Sal Químico (SQ)
   totalVolumeTons: number;
@@ -699,10 +699,10 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     vesselName: 'CLIPPER BARI STAR',
     loaMeters: 179.97,
     dwt: 37976,
-    eta: '24/08/2026 08:00',
-    etb: '24/08/2026 10:00',
-    etd: '28/08/2026 09:00',
-    status: 'Previsto',
+    eta: '24/08/2026 10:00',
+    etb: '24/08/2026 14:00',
+    etd: '27/08/2026 09:00',
+    status: 'Em operação',
     scVolumeTons: 36150,
     sqVolumeTons: 0,
     totalVolumeTons: 36150,
@@ -719,9 +719,9 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     vesselName: 'GANNET BULKER',
     loaMeters: 189.99,
     dwt: 57809,
-    eta: '23/08/2026 18:00',
-    etb: '28/08/2026 11:00',
-    etd: '02/09/2026 08:00',
+    eta: '23/08/2026 21:30',
+    etb: '27/08/2026 11:00',
+    etd: '31/08/2026 08:00',
     status: 'Previsto',
     scVolumeTons: 45780,
     sqVolumeTons: 0,
@@ -839,28 +839,31 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     monthName: 'Agosto',
     shortMonth: 'Ago',
     year: 2026,
-    vesselCount: 3,
-    scTotal: 61050,
+    vesselCount: 5,
+    scTotal: 142980,
     sqTotal: 34500,
-    totalVolume: 95550,
-    salinorVolume: 67450,
+    totalVolume: 177480,
+    salinorVolume: 149380,
     sdbVolume: 28100,
-    expVolume: 52550,
+    expVolume: 134480,
     cbtVolume: 43000,
   },
 ];
 
+export const LINEUP_LAST_UPDATED = '26/08/2026 08:54';
+
 export const OVERALL_TOTALS = {
-  totalTons: 1135589,
-  scTotalTons: 785736,
-  sqTotalTons: 349853,
+  totalTons: 1217519,
+  scTotalTons: 821916,
+  sqTotalTons: 395603,
   totalVessels: 34,
   concludedVessels: 32,
-  plannedVessels: 2,
-  salinorTotalTons: 981939,
+  operatingVessels: 1,
+  plannedVessels: 1,
+  salinorTotalTons: 1063869,
   sdbTotalTons: 153650,
-  expTotalTons: 652956,
+  expTotalTons: 734886,
   cbtTotalTons: 482633,
-  monthlyAverageTons: 141948,
-  vesselAverageTons: 35487,
+  monthlyAverageTons: 152190,
+  vesselAverageTons: 35809,
 };

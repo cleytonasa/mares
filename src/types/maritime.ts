@@ -130,7 +130,7 @@ export interface VesselAIS {
   draftMeters: number; // Calado
   lengthMeters: number; // LOA
   beamMeters: number; // Boca
-  status: 'Navegando no Canal' | 'Fundeado' | 'Operando no TERMISA' | 'Manobra de Reboque' | 'Espera de Maré' | 'Atracado no Cais' | 'Patrulha / Apoio' | 'Atracado no Pier (Carregamento)' | 'Fundeado na Área de Espera' | 'Em Navegação (Aproximação)' | 'Em Rota para Areia Branca' | string;
+  status: 'Navegando no Canal' | 'Fundeado' | 'Operando no TERMISA' | 'Manobra de Reboque' | 'Espera de Maré' | 'Atracado no Cais' | 'Patrulha / Apoio';
   destination: string;
   eta: string;
   vhfChannel: string;
