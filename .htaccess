@@ -1,31 +1,40 @@
-# Configurações do Apache para SPA (React / Vite)
+# Configurações do Apache para SPA em subdiretório (/mares/)
 DirectoryIndex index.html
-
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-
-  # Não reescrever se o arquivo ou diretório existir fisicamente
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
-
-  # Redirecionar qualquer outra requisição para o index.html (SPA)
-  RewriteRule ^ index.html [L]
-</IfModule>
 
 <IfModule mod_mime.c>
   AddType application/javascript .js .mjs
+  AddType text/javascript .js
   AddType text/css .css
   AddType application/json .json
   AddType application/manifest+json .webmanifest
   AddType image/svg+xml .svg .svgz
+  AddType image/x-icon .ico
+  AddType image/png .png
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /mares/
+
+  # Arquivos e diretórios existentes não são reescritos
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Se for arquivo de script/css/imagem que não existe fisicamente, retorne 404
+  RewriteCond %{REQUEST_URI} \.(js|mjs|css|png|jpg|jpeg|gif|svg|ico|webmanifest|json|woff|woff2)$ [NC]
+  RewriteRule ^ - [R=404,L]
+
+  # Fallback de SPA para index.html
+  RewriteRule ^ index.html [L]
 </IfModule>
 
 <IfModule mod_headers.c>
-  # Previne cache no HTML e manifest para que o site sempre pegue a versão mais nova
   <FilesMatch "\.(html|htm|json|webmanifest)$">
     Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
     Header set Pragma "no-cache"
     Header set Expires "0"
   </FilesMatch>
 </IfModule>
+
+
