@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowUpRight, ArrowDownRight, Minus, Waves, Clock, Compass, Wind, Sparkles } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, Waves, Clock, Compass, Wind, Sparkles, Ship, Calendar, Anchor } from 'lucide-react';
 import { CurrentTideState } from '../utils/tideCalculations';
 import { PortConfig, WeatherData } from '../types/maritime';
+import { SALT_SHIPMENTS_2026 } from '../data/saltShipmentsData';
 
 interface CurrentTideCardProps {
   tideState: CurrentTideState;
@@ -36,6 +37,11 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
     minutesToNextHighEvent,
     currentWaterDepth,
   } = tideState;
+
+  // Active Operating Vessel in Terminal (e.g. CLIPPER BARI STAR)
+  const operatingVessel = SALT_SHIPMENTS_2026.find((v) => v.status === 'Em operação');
+  // Next Planned Vessel in Line-up (e.g. GANNET BULKER)
+  const nextPlannedVessel = !operatingVessel ? SALT_SHIPMENTS_2026.find((v) => v.status === 'Previsto') : undefined;
 
   // Wind speed unit toggle ('knots' or 'kmh')
   const [windUnit, setWindUnit] = useState<'knots' | 'kmh'>(() => {
@@ -114,6 +120,81 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {operatingVessel ? (
+            <div className="px-3 py-1.5 rounded-xl bg-slate-950/90 border border-amber-500/50 text-amber-300 shadow-md flex items-center gap-2.5">
+              <div className="relative flex items-center justify-center shrink-0">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping absolute opacity-75" />
+                <span className="w-2 h-2 rounded-full bg-amber-400 relative" />
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <Ship className="w-2.5 h-2.5 text-amber-400" />
+                    <span>Navio em Operação</span>
+                  </span>
+                  <span className="text-xs font-black text-white font-mono">
+                    {operatingVessel.vesselName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-300">
+                  <span className="text-slate-600 hidden sm:inline">•</span>
+                  <span className="font-semibold">
+                    {operatingVessel.totalVolumeTons.toLocaleString('pt-BR')} t{' '}
+                    {operatingVessel.scVolumeTons > 0 && operatingVessel.sqVolumeTons > 0
+                      ? 'SC/SQ'
+                      : operatingVessel.scVolumeTons > 0
+                      ? 'SC'
+                      : 'SQ'}
+                  </span>
+                  <span className="text-slate-600 hidden md:inline">•</span>
+                  <span className="text-slate-300 hidden md:inline">{operatingVessel.shipper}</span>
+                </div>
+              </div>
+            </div>
+          ) : nextPlannedVessel ? (
+            <div className="px-3 py-1.5 rounded-xl bg-slate-950/90 border border-cyan-500/50 text-cyan-300 shadow-md flex items-center gap-2.5">
+              <div className="relative flex items-center justify-center shrink-0">
+                <Clock className="w-3.5 h-3.5 text-cyan-400" />
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <Calendar className="w-2.5 h-2.5 text-cyan-400" />
+                    <span>Próximo Previsto</span>
+                  </span>
+                  <span className="text-xs font-black text-white font-mono">
+                    {nextPlannedVessel.vesselName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-300">
+                  <span className="text-slate-600 hidden sm:inline">•</span>
+                  <span className="text-amber-300 font-semibold">ETA {nextPlannedVessel.eta.split(' ')[0]}</span>
+                  <span className="text-slate-600 hidden sm:inline">•</span>
+                  <span className="font-semibold">
+                    {nextPlannedVessel.totalVolumeTons.toLocaleString('pt-BR')} t{' '}
+                    {nextPlannedVessel.scVolumeTons > 0 && nextPlannedVessel.sqVolumeTons > 0
+                      ? 'SC/SQ'
+                      : nextPlannedVessel.scVolumeTons > 0
+                      ? 'SC'
+                      : 'SQ'}
+                  </span>
+                  <span className="text-slate-600 hidden md:inline">•</span>
+                  <span className="text-slate-300 hidden md:inline">{nextPlannedVessel.shipper}</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="px-3 py-1.5 rounded-xl bg-slate-950/80 border border-emerald-500/40 text-emerald-300 shadow-sm flex items-center gap-2">
+              <Anchor className="w-3.5 h-3.5 text-emerald-400" />
+              <div className="text-[11px] font-medium text-slate-300 flex items-center gap-1.5">
+                <span className="font-bold text-emerald-400 uppercase text-[9px] tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
+                  Berço Disponível
+                </span>
+                <span className="hidden sm:inline text-slate-400">Terminal Livre</span>
+              </div>
+            </div>
+          )}
+
           {isSimulated && onResetSimulation && (
             <button
               onClick={onResetSimulation}
