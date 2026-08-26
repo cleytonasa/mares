@@ -6,8 +6,9 @@ import './index.css';
 // Register Service Worker for PWA and Push Notifications
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    const swPath = './sw.js';
     navigator.serviceWorker
-      .register('/sw.js')
+      .register(swPath)
       .then((reg) => {
         reg.update();
       })
