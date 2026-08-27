@@ -709,10 +709,10 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     vesselName: 'CLIPPER BARI STAR',
     loaMeters: 179.97,
     dwt: 37976,
-    eta: '24/08/2026 10:00',
+    eta: '24/08/2026 07:30',
     etb: '24/08/2026 14:00',
-    etd: '27/08/2026 09:00',
-    status: 'Em operação',
+    etd: '27/08/2026 12:42',
+    status: 'Concluído',
     scVolumeTons: 36150,
     sqVolumeTons: 0,
     totalVolumeTons: 36150,
@@ -730,9 +730,9 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     loaMeters: 189.99,
     dwt: 57809,
     eta: '23/08/2026 21:30',
-    etb: '27/08/2026 11:00',
+    etb: '27/08/2026 14:00',
     etd: '31/08/2026 08:00',
-    status: 'Previsto',
+    status: 'Em operação',
     scVolumeTons: 45780,
     sqVolumeTons: 0,
     totalVolumeTons: 45780,
@@ -920,55 +920,55 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Ago',
     year: 2026,
     vesselCount: 5,
-    concludedCount: 3,
+    concludedCount: 4,
     operatingCount: 1,
-    plannedCount: 1,
-    concludedTotalVolume: 95550, // Somente navios Concluídos: MARCOS DIAS (43.000) + CALLIO (24.450) + SUNLIGHT (28.100)
-    concludedScTotal: 61050,
+    plannedCount: 0,
+    concludedTotalVolume: 131700, // Somente navios Concluídos: MARCOS DIAS (43.000) + CALLIO (24.450) + SUNLIGHT (28.100) + CLIPPER BARI STAR (36.150)
+    concludedScTotal: 97200,
     concludedSqTotal: 34500,
     scTotal: 142980,
     sqTotal: 34500,
-    totalVolume: 177480, // Total line-up de Agosto (Concluídos + Em operação + Previstos)
+    totalVolume: 177480, // Total line-up de Agosto (Concluídos + Em operação)
     salinorVolume: 149380,
     sdbVolume: 28100,
-    salinorConcludedVolume: 67450,
+    salinorConcludedVolume: 103600,
     sdbConcludedVolume: 28100,
     expVolume: 134480,
     cbtVolume: 43000,
-    expConcludedVolume: 52550,
+    expConcludedVolume: 88700,
     cbtConcludedVolume: 43000,
   },
 ];
 
-export const LINEUP_LAST_UPDATED = '26/08/2026 08:54';
+export const LINEUP_LAST_UPDATED = '27/08/2026 15:30';
 
 export const OVERALL_TOTALS = {
   // Total Embarcado (Somente Navios Concluídos)
-  concludedTotalTons: 1135589, // 1.135.589 toneladas efetivamente embarcadas (Jan a Ago)
-  concludedScTotalTons: 739986,
+  concludedTotalTons: 1171739, // 1.171.739 toneladas efetivamente embarcadas (Jan a Ago)
+  concludedScTotalTons: 776136,
   concludedSqTotalTons: 395603,
-  concludedVessels: 32,
-  concludedSalinorTons: 981939,
+  concludedVessels: 33,
+  concludedSalinorTons: 1018089,
   concludedSdbTons: 153650,
-  concludedExpTons: 652956,
+  concludedExpTons: 689106,
   concludedCbtTons: 482633,
 
   // Totais Consolidados do Line-up
-  totalTons: 1135589, // Total Embarcado Concluído
-  scTotalTons: 739986,
+  totalTons: 1171739, // Total Embarcado Concluído
+  scTotalTons: 776136,
   sqTotalTons: 395603,
-  totalVessels: 34, // Total de navios no line-up (32 concluídos + 1 em operação + 1 previsto)
-  salinorTotalTons: 981939,
+  totalVessels: 34, // Total de navios no line-up (33 concluídos + 1 em operação)
+  salinorTotalTons: 1018089,
   sdbTotalTons: 153650,
-  expTotalTons: 652956,
+  expTotalTons: 689106,
   cbtTotalTons: 482633,
-  monthlyAverageTons: 141949, // 1.135.589 / 8
-  vesselAverageTons: 35487, // 1.135.589 / 32
+  monthlyAverageTons: 146467, // 1.171.739 / 8
+  vesselAverageTons: 35507, // 1.171.739 / 33
 
   // Informações adicionais de Navios Em Operação e Previstos
-  operatingTotalTons: 36150,
+  operatingTotalTons: 45780,
   operatingVessels: 1,
-  plannedTotalTons: 45780,
-  plannedVessels: 1,
+  plannedTotalTons: 0,
+  plannedVessels: 0,
   totalProgrammedTons: 1217519,
 };

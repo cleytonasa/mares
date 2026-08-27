@@ -47,6 +47,10 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
   const [timelineMonth, setTimelineMonth] = useState<number>(8); // Default to August 2026 (latest month with Concluded, Operating, and Planned vessels)
 
+  // Active Operating Vessel & Next Planned Vessel
+  const activeOperatingVessel = useMemo(() => SALT_SHIPMENTS_2026.find((v) => v.status === 'Em operação'), []);
+  const nextPlannedVessel = useMemo(() => !activeOperatingVessel ? SALT_SHIPMENTS_2026.find((v) => v.status === 'Previsto') : undefined, [activeOperatingVessel]);
+
   // Timeline month details & vessels separated by Operating (first), Planned (second), and Concluded (below)
   const timelineMonthInfo = useMemo(() => {
     return MONTHLY_SALT_SUMMARIES.find((m) => m.month === timelineMonth) || MONTHLY_SALT_SUMMARIES[7];
@@ -230,27 +234,66 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
             </div>
           </div>
 
-          {/* Real-Time Port Status Badge (Em Operação) */}
+          {/* Real-Time Port Status Badge (Em Operação / Previsto) */}
           <div className="flex items-center gap-2">
-            <div className="px-3.5 py-2 rounded-xl bg-slate-950/90 border border-amber-500/70 text-amber-300 shadow-lg flex items-center gap-3">
-              <div className="relative flex items-center justify-center shrink-0">
-                <span className="w-3 h-3 rounded-full bg-amber-400 animate-ping absolute opacity-75" />
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 relative" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-amber-400 font-black uppercase tracking-wider">
-                    EM OPERAÇÃO NO TERMINAL
-                  </span>
+            {activeOperatingVessel ? (
+              <div className="px-3.5 py-2 rounded-xl bg-slate-950/90 border border-amber-500/70 text-amber-300 shadow-lg flex items-center gap-3">
+                <div className="relative flex items-center justify-center shrink-0">
+                  <span className="w-3 h-3 rounded-full bg-amber-400 animate-ping absolute opacity-75" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 relative" />
                 </div>
-                <div className="text-xs font-black text-white font-mono flex items-center gap-1.5 mt-0.5">
-                  <Ship className="w-3.5 h-3.5 text-amber-400" />
-                  <span>CLIPPER BARI STAR</span>
-                  <span className="text-slate-400 font-normal">•</span>
-                  <span className="text-cyan-300">36.150 t SC</span>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-amber-400 font-black uppercase tracking-wider">
+                      EM OPERAÇÃO NO TERMINAL
+                    </span>
+                  </div>
+                  <div className="text-xs font-black text-white font-mono flex items-center gap-1.5 mt-0.5">
+                    <Ship className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{activeOperatingVessel.vesselName}</span>
+                    <span className="text-slate-400 font-normal">•</span>
+                    <span className="text-cyan-300">
+                      {activeOperatingVessel.totalVolumeTons.toLocaleString('pt-BR')} t{' '}
+                      {activeOperatingVessel.scVolumeTons > 0 && activeOperatingVessel.sqVolumeTons > 0
+                        ? 'SC/SQ'
+                        : activeOperatingVessel.scVolumeTons > 0
+                        ? 'SC'
+                        : 'SQ'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : nextPlannedVessel ? (
+              <div className="px-3.5 py-2 rounded-xl bg-slate-950/90 border border-cyan-500/60 text-cyan-300 shadow-lg flex items-center gap-3">
+                <div className="relative flex items-center justify-center shrink-0">
+                  <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-cyan-400 font-black uppercase tracking-wider">
+                      PRÓXIMO PREVISTO
+                    </span>
+                  </div>
+                  <div className="text-xs font-black text-white font-mono flex items-center gap-1.5 mt-0.5">
+                    <Ship className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{nextPlannedVessel.vesselName}</span>
+                    <span className="text-slate-400 font-normal">•</span>
+                    <span className="text-amber-300 font-semibold">ETA {nextPlannedVessel.eta.split(' ')[0]}</span>
+                    <span className="text-slate-400 font-normal">•</span>
+                    <span className="text-cyan-300">
+                      {nextPlannedVessel.totalVolumeTons.toLocaleString('pt-BR')} t
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="px-3.5 py-2 rounded-xl bg-slate-950/80 border border-emerald-500/40 text-emerald-300 shadow-sm flex items-center gap-2">
+                <Anchor className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                  Berço Disponível
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
