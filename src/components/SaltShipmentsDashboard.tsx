@@ -242,9 +242,6 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                   <span className="text-[10px] text-amber-400 font-black uppercase tracking-wider">
                     EM OPERAÇÃO NO TERMINAL
                   </span>
-                  <span className="px-1.5 py-0.2 rounded bg-amber-950 text-[9px] font-mono text-amber-300 border border-amber-500/40">
-                    Ao Vivo
-                  </span>
                 </div>
                 <div className="text-xs font-black text-white font-mono flex items-center gap-1.5 mt-0.5">
                   <Ship className="w-3.5 h-3.5 text-amber-400" />
