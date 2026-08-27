@@ -210,7 +210,7 @@ export default function App() {
 
             {/* Quick Actions & Navigation Module */}
             <div className="bg-slate-900/90 rounded-xl sm:rounded-2xl border border-slate-800 p-2.5 sm:p-4 shadow-xl text-slate-100">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 {/* 1. Tábua Oficial */}
                 <div
                   onClick={() => setActiveTab('table')}
@@ -283,25 +283,6 @@ export default function App() {
                     <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Painel de Embarque</h4>
                     <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 leading-snug line-clamp-2">
                       1.1M Tons, navios concluídos, gráficos e line-up.
-                    </p>
-                  </div>
-                </div>
-
-                {/* 5. Boletim WhatsApp */}
-                <div
-                  onClick={() => setActiveTab('report')}
-                  className="p-2.5 sm:p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-cyan-500/50 hover:bg-slate-950 cursor-pointer transition shadow-md group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] sm:text-[11px] font-bold text-cyan-400 uppercase tracking-wide truncate">
-                        Informativo
-                      </span>
-                      <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 group-hover:text-cyan-400 shrink-0 transition" />
-                    </div>
-                    <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Boletim WhatsApp</h4>
-                    <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 leading-snug line-clamp-2">
-                      Relatório oficial com 1 clique para envio.
                     </p>
                   </div>
                 </div>

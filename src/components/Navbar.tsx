@@ -1,5 +1,5 @@
 import React from 'react';
-import { Anchor, Bell, BellRing, Compass, FileText, Map, Ship, Table, Waves } from 'lucide-react';
+import { Anchor, Bell, BellRing, Compass, Map, Ship, Table, Waves } from 'lucide-react';
 import { PortConfig, CustomUserLocation } from '../types/maritime';
 import { IntersalLogo } from './IntersalLogo';
 
@@ -172,21 +172,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Table className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-emerald-400" />
                 <span className="hidden sm:inline">Tábua DHN</span>
                 <span className="sm:hidden">Tábua</span>
-              </button>
-
-              <button
-                id="nav-tab-report"
-                onClick={() => onChangeTab('report')}
-                title="Boletim Informativo de Maré"
-                className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 whitespace-nowrap ${
-                  activeTab === 'report'
-                    ? 'bg-slate-800 text-cyan-300 font-semibold border border-cyan-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                }`}
-              >
-                <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-amber-400" />
-                <span className="hidden sm:inline">Boletim</span>
-                <span className="sm:hidden">Boletim</span>
               </button>
             </nav>
           </div>
