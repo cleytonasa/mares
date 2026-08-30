@@ -9,6 +9,7 @@ import {
   Minimize2,
   Info,
   CalendarDays,
+  ChevronLeft,
 } from 'lucide-react';
 import { PortConfig } from '../types/maritime';
 
@@ -81,35 +82,40 @@ const AUGUST_2026_DAYS: DailyRainRecord[] = Array.from({ length: 31 }, (_, i) =>
   };
 });
 
+// Seeded realistic daily distributions for historical months in 2026
+const HISTORICAL_MONTH_RAIN_DISTRIBUTIONS: Record<number, number[]> = {
+  1: [0, 0, 4.2, 0, 0, 0, 8.6, 0, 0, 0, 0, 0, 0, 5.6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // 3 days: 18.4mm
+  2: [0, 6.4, 0, 0, 12.8, 0, 0, 0, 0, 14.2, 0, 0, 5.8, 0, 0, 0, 0, 0, 6.0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // 6 days: 45.2mm
+  3: [0, 8.5, 0, 14.2, 0, 0, 6.4, 18.0, 0, 0, 11.2, 0, 0, 9.8, 0, 15.5, 0, 0, 7.2, 0, 0, 4.8, 0, 0, 3.0, 0, 0, 0, 0, 0, 0], // 11 days: 98.6mm
+  4: [12.4, 0, 8.6, 0, 15.2, 0, 9.4, 0, 14.0, 0, 6.8, 0, 11.5, 0, 7.2, 0, 10.4, 0, 5.5, 0, 3.2, 0, 4.2, 0, 0, 0, 0, 4.0, 0, 0], // 14 days: 112.4mm
+  5: [0, 12.0, 0, 0, 8.4, 0, 0, 14.6, 0, 0, 9.2, 0, 0, 6.8, 0, 0, 7.5, 0, 0, 5.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // 8 days: 64.0mm
+  6: [0, 0, 7.8, 0, 0, 0, 9.2, 0, 0, 6.5, 0, 0, 5.0, 0, 0, 0, 0, 4.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // 5 days: 32.5mm
+  7: [0, 0, 0, 0, 5.4, 0, 0, 0, 0, 0, 6.2, 0, 0, 0, 0, 0, 2.6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // 3 days: 14.2mm
+};
+
 export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
   const [selectedMonth, setSelectedMonth] = useState<number>(8); // August by default
   const [expanded, setExpanded] = useState<boolean>(false);
-  const [hoveredBar, setHoveredBar] = useState<string | null>(null);
+  const [hoveredDailyDate, setHoveredDailyDate] = useState<string | null>(null);
+  const [hoveredMonth, setHoveredMonth] = useState<MonthlyRainRecord | null>(null);
 
   const isMacau = port.name.toLowerCase().includes('macau');
   const monthlyData = isMacau ? MACAU_MONTHLY : AREIA_BRANCA_MONTHLY;
 
-  // Daily records calculated
+  // Daily records calculated with exact daily distribution
   const dailyData = useMemo(() => {
     if (selectedMonth === 8) {
       return AUGUST_2026_DAYS;
     }
-    // Days generator for other months based on monthly rain distribution
+
     const daysInMonth = new Date(2026, selectedMonth, 0).getDate();
     const monthRecord = monthlyData.find((m) => m.month === selectedMonth) || monthlyData[7];
-    const totalRain = monthRecord.rainMm;
-    const rainyDays = monthRecord.daysWithRain;
+    const fixedRains = HISTORICAL_MONTH_RAIN_DISTRIBUTIONS[selectedMonth] || [];
 
     return Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
-      let rain = 0;
-      if (rainyDays > 0 && totalRain > 0) {
-        // Distribute rain on some realistic days for previous months
-        if (day === 5 || day === 12 || day === 18 || day === 22 || day === 27) {
-          rain = Number((totalRain / rainyDays).toFixed(1));
-        }
-      }
+      const rain = fixedRains[i] !== undefined ? fixedRains[i] : 0;
       return {
         date: `2026-${String(selectedMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
         dayLabel: `${String(day).padStart(2, '0')}/${String(selectedMonth).padStart(2, '0')}`,
@@ -159,6 +165,14 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
     }
   }, [viewMode, dailyData, monthlyData]);
 
+  // Handler when user clicks on a month bar: Switch to daily view of that month
+  const handleSelectMonthAndGoDaily = (monthNumber: number) => {
+    setSelectedMonth(monthNumber);
+    setViewMode('daily');
+  };
+
+  const currentMonthRecord = monthlyData.find((m) => m.month === selectedMonth) || monthlyData[7];
+
   return (
     <div
       id="rainfall-pluviometer-card"
@@ -174,11 +188,13 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
             <h3 className="text-xs sm:text-sm font-bold text-white tracking-wide truncate flex items-center gap-1.5 font-sans uppercase">
               <span>Chuva no Período</span>
               <span className="text-[10px] font-mono text-cyan-400 font-normal lowercase bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/40">
-                {viewMode === 'daily' ? `mês de ${dailyData[0]?.monthName.toLowerCase()} até agora` : 'acumulado anual 2026'}
+                {viewMode === 'daily'
+                  ? `mês de ${currentMonthRecord.monthName.toLowerCase()} (${stats.countRainDays} ${stats.countRainDays === 1 ? 'dia com chuva' : 'dias com chuva'})`
+                  : 'acumulado anual 2026'}
               </span>
             </h3>
             <p className="text-[10px] sm:text-xs text-slate-400 font-mono truncate">
-              {port.name} • Monitoramento pluviométrico diário e mensal
+              {port.name} • Clique em qualquer mês para abrir a visão diária detalhada
             </p>
           </div>
         </div>
@@ -215,18 +231,20 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
 
           {/* Month Selector when in Daily view */}
           {viewMode === 'daily' && (
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              aria-label="Selecionar mês pluviométrico"
-              className="bg-slate-950 border border-slate-700 text-cyan-300 text-xs rounded-lg px-2 py-1 outline-none font-mono focus:border-cyan-500"
-            >
-              {monthlyData.slice(0, 8).map((m) => (
-                <option key={m.month} value={m.month} className="bg-slate-900 text-white">
-                  {m.monthName} 2026
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                aria-label="Selecionar mês pluviométrico"
+                className="bg-slate-950 border border-slate-700 text-cyan-300 text-xs rounded-lg px-2 py-1 outline-none font-mono focus:border-cyan-500 cursor-pointer"
+              >
+                {monthlyData.map((m) => (
+                  <option key={m.month} value={m.month} className="bg-slate-900 text-white">
+                    {m.monthName} 2026 ({m.daysWithRain}d / {m.rainMm}mm)
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
 
           {/* Expand/Collapse */}
@@ -240,15 +258,17 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
         </div>
       </div>
 
-      {/* Top Legend and Summary Metrics matching user screenshot */}
+      {/* Top Legend and Summary Metrics */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
         <div className="flex items-center gap-2 text-slate-300">
           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
           <span className="font-semibold text-slate-200">
-            {viewMode === 'daily' ? 'Pluviômetro Diário' : 'Pluviômetro Mensal'}
+            {viewMode === 'daily'
+              ? `Pluviômetro Diário • ${currentMonthRecord.monthName} 2026`
+              : 'Pluviômetro Mensal (Clique no mês para ver os dias)'}
           </span>
-          <span className="text-[11px] text-slate-500 font-mono">
-            ({viewMode === 'daily' ? `${dailyData.length} dias analisados` : '12 meses'})
+          <span className="text-[11px] text-cyan-400 font-mono font-medium">
+            {viewMode === 'daily' ? `[${stats.countRainDays} dias com chuva]` : `[${stats.countRainDays} dias com chuva no ano]`}
           </span>
         </div>
 
@@ -269,10 +289,66 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
         </div>
       </div>
 
-      {/* Pluviometric Bar Chart */}
-      <div className={`relative w-full bg-slate-950/60 rounded-xl border border-slate-800/80 p-3 sm:p-4 overflow-x-auto ${expanded ? 'h-72' : 'h-48'} transition-all`}>
+      {/* Active Hover / Selection Banner for clear unclipped display */}
+      <div className="min-h-[28px] flex items-center justify-between bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1 text-xs">
+        {viewMode === 'monthly' ? (
+          hoveredMonth ? (
+            <div className="flex items-center justify-between w-full font-mono text-[11px]">
+              <span className="text-cyan-300 font-bold flex items-center gap-1.5">
+                <span>🗓️ {hoveredMonth.monthName} 2026</span>
+                <span className="text-slate-400 font-normal">|</span>
+                <span className="text-blue-400 font-bold">{hoveredMonth.rainMm} mm</span>
+                <span className="text-slate-400 font-normal">({hoveredMonth.daysWithRain} dias com chuva)</span>
+              </span>
+              <span className="text-[10px] text-cyan-400 font-sans animate-pulse font-medium">
+                👉 Clique para abrir visão diária deste mês
+              </span>
+            </div>
+          ) : (
+            <div className="text-[11px] text-slate-400 flex items-center justify-between w-full">
+              <span>Passe o mouse sobre as colunas para ver detalhes ou clique em um mês para abrir os dias.</span>
+              <span className="font-mono text-cyan-400 text-[10px]">Mês ativo: {currentMonthRecord.monthName}</span>
+            </div>
+          )
+        ) : (
+          <div className="flex items-center justify-between w-full text-[11px] font-mono">
+            <span className="text-slate-300">
+              {hoveredDailyDate ? (
+                <span>
+                  Dia selecionado:{' '}
+                  <strong className="text-cyan-300">
+                    {dailyData.find((d) => d.date === hoveredDailyDate)?.dayLabel}/2026
+                  </strong>{' '}
+                  — Precipitação:{' '}
+                  <strong className="text-blue-400">
+                    {dailyData.find((d) => d.date === hoveredDailyDate)?.rainMm} mm
+                  </strong>
+                </span>
+              ) : (
+                <span>
+                  Exibindo todos os {dailyData.length} dias de {currentMonthRecord.monthName}. Total de{' '}
+                  <strong className="text-cyan-300">{stats.countRainDays} dias</strong> com chuva.
+                </span>
+              )}
+            </span>
+            <button
+              onClick={() => setViewMode('monthly')}
+              className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-sans underline"
+            >
+              <ChevronLeft className="w-3 h-3" /> Voltar ao resumo anual
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Pluviometric Bar Chart with generous top padding to prevent clipping */}
+      <div
+        className={`relative w-full bg-slate-950/60 rounded-xl border border-slate-800/80 p-3 sm:p-4 overflow-x-auto ${
+          expanded ? 'h-80' : 'h-52'
+        } transition-all`}
+      >
         {/* Grid lines */}
-        <div className="absolute inset-x-3 sm:inset-x-4 top-3 sm:top-4 bottom-7 flex flex-col justify-between pointer-events-none opacity-20">
+        <div className="absolute inset-x-3 sm:inset-x-4 top-4 bottom-7 flex flex-col justify-between pointer-events-none opacity-20">
           <div className="border-b border-dashed border-slate-400 w-full" />
           <div className="border-b border-dashed border-slate-400 w-full" />
           <div className="border-b border-dashed border-slate-400 w-full" />
@@ -280,7 +356,7 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
         </div>
 
         {/* Left Y-axis labels */}
-        <div className="absolute left-1.5 top-3 bottom-7 flex flex-col justify-between text-[9px] font-mono text-slate-500 pointer-events-none">
+        <div className="absolute left-1.5 top-4 bottom-7 flex flex-col justify-between text-[9px] font-mono text-slate-500 pointer-events-none">
           <span>{maxY}</span>
           <span>{Math.round(maxY / 2)}</span>
           <span>0</span>
@@ -288,24 +364,24 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
 
         {/* Dynamic Bars Container */}
         {viewMode === 'daily' ? (
-          <div className="flex items-end justify-between gap-1 h-full pl-6 pr-1 pb-6 relative z-10 min-w-[580px] sm:min-w-0">
+          <div className="flex items-end justify-between gap-1 h-full pl-6 pr-1 pb-6 pt-6 relative z-10 min-w-[580px] sm:min-w-0">
             {dailyData.map((d) => {
-              const heightPercent = d.rainMm > 0 ? Math.max((d.rainMm / maxY) * 100, 12) : 0;
+              const heightPercent = d.rainMm > 0 ? Math.max((d.rainMm / maxY) * 100, 14) : 0;
               const hasRain = d.rainMm > 0;
-              const isHovered = hoveredBar === d.date;
+              const isHovered = hoveredDailyDate === d.date;
 
               return (
                 <div
                   key={d.date}
-                  onMouseEnter={() => setHoveredBar(d.date)}
-                  onMouseLeave={() => setHoveredBar(null)}
+                  onMouseEnter={() => setHoveredDailyDate(d.date)}
+                  onMouseLeave={() => setHoveredDailyDate(null)}
                   className="flex-1 flex flex-col items-center justify-end h-full group relative cursor-pointer"
                 >
-                  {/* Tooltip on hover */}
+                  {/* Floating tooltip positioned comfortably inside */}
                   {isHovered && (
-                    <div className="absolute -top-9 z-30 bg-slate-900 border border-blue-500 text-white text-[10px] font-mono px-2 py-1 rounded shadow-xl whitespace-nowrap pointer-events-none animate-in fade-in zoom-in-95">
-                      <div className="font-bold text-cyan-300">{d.dayLabel}</div>
-                      <div>Chuva: <span className="font-bold text-blue-400">{d.rainMm} mm</span></div>
+                    <div className="absolute -top-7 z-30 bg-slate-900/95 border border-cyan-400 text-white text-[10px] font-mono px-2 py-0.5 rounded shadow-2xl whitespace-nowrap pointer-events-none">
+                      <span className="font-bold text-cyan-300">{d.dayLabel}:</span>{' '}
+                      <span className="font-bold text-blue-400">{d.rainMm} mm</span>
                     </div>
                   )}
 
@@ -318,22 +394,26 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
 
                   {/* The Bar */}
                   <div
-                    style={{ height: hasRain ? `${heightPercent}%` : '2px' }}
+                    style={{ height: hasRain ? `${heightPercent}%` : '3px' }}
                     className={`w-full max-w-[12px] sm:max-w-[14px] rounded-t-sm transition-all duration-300 ${
                       hasRain
                         ? isHovered
-                          ? 'bg-cyan-400 shadow-md shadow-blue-500/50'
-                          : 'bg-blue-600 hover:bg-blue-500'
-                        : 'bg-slate-800'
+                          ? 'bg-cyan-300 shadow-lg shadow-cyan-500/50'
+                          : 'bg-gradient-to-t from-blue-700 to-cyan-500 hover:from-blue-600 hover:to-cyan-400'
+                        : 'bg-slate-800/80 hover:bg-slate-700'
                     }`}
                   />
 
                   {/* X Axis Day Label */}
-                  <span className={`text-[8px] sm:text-[9px] font-mono mt-1.5 transition ${
-                    d.dayOfMonth % 4 === 1 || d.dayOfMonth === dailyData.length
-                      ? 'text-slate-400 font-semibold'
-                      : 'text-slate-600 hidden sm:inline'
-                  }`}>
+                  <span
+                    className={`text-[8px] sm:text-[9px] font-mono mt-1.5 transition ${
+                      hasRain
+                        ? 'text-cyan-300 font-bold'
+                        : d.dayOfMonth % 4 === 1 || d.dayOfMonth === dailyData.length
+                        ? 'text-slate-400 font-semibold'
+                        : 'text-slate-600 hidden sm:inline'
+                    }`}
+                  >
                     {d.dayOfMonth % 4 === 1 ? `Aug ${String(d.dayOfMonth).padStart(2, '0')}` : d.dayOfMonth}
                   </span>
                 </div>
@@ -341,26 +421,29 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
             })}
           </div>
         ) : (
-          /* Monthly Bars */
-          <div className="flex items-end justify-between gap-2 h-full pl-6 pr-1 pb-6 relative z-10">
+          /* Monthly Bars with Clickable Interaction to Daily View */
+          <div className="flex items-end justify-between gap-2 h-full pl-6 pr-1 pb-6 pt-6 relative z-10">
             {monthlyData.map((m) => {
-              const heightPercent = m.rainMm > 0 ? Math.max((m.rainMm / maxY) * 100, 6) : 0;
+              const heightPercent = m.rainMm > 0 ? Math.max((m.rainMm / maxY) * 100, 8) : 0;
               const hasRain = m.rainMm > 0;
-              const isHovered = hoveredBar === m.monthName;
+              const isHovered = hoveredMonth?.month === m.month;
+              const isSelected = selectedMonth === m.month;
 
               return (
                 <div
                   key={m.month}
-                  onMouseEnter={() => setHoveredBar(m.monthName)}
-                  onMouseLeave={() => setHoveredBar(null)}
+                  onClick={() => handleSelectMonthAndGoDaily(m.month)}
+                  onMouseEnter={() => setHoveredMonth(m)}
+                  onMouseLeave={() => setHoveredMonth(null)}
+                  title={`Clique para abrir os dias de ${m.monthName}`}
                   className="flex-1 flex flex-col items-center justify-end h-full group relative cursor-pointer"
                 >
-                  {/* Tooltip on hover */}
+                  {/* Floating tooltip positioned with safety buffer */}
                   {isHovered && (
-                    <div className="absolute -top-11 z-30 bg-slate-900 border border-blue-500 text-white text-[10px] font-mono px-2 py-1 rounded shadow-xl whitespace-nowrap pointer-events-none">
-                      <div className="font-bold text-cyan-300">{m.monthName} 2026</div>
-                      <div>Acumulado: <span className="font-bold text-blue-400">{m.rainMm} mm</span></div>
-                      <div className="text-slate-400 text-[9px]">{m.daysWithRain} dias com chuva</div>
+                    <div className="absolute -top-8 z-30 bg-slate-900/95 border border-cyan-400 text-white text-[10px] font-mono px-2 py-0.5 rounded shadow-2xl whitespace-nowrap pointer-events-none">
+                      <span className="font-bold text-cyan-300">{m.monthName}:</span>{' '}
+                      <span className="font-bold text-blue-400">{m.rainMm} mm</span>{' '}
+                      <span className="text-slate-300">({m.daysWithRain}d)</span>
                     </div>
                   )}
 
@@ -373,20 +456,31 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
 
                   {/* The Bar */}
                   <div
-                    style={{ height: hasRain ? `${heightPercent}%` : '2px' }}
+                    style={{ height: hasRain ? `${heightPercent}%` : '3px' }}
                     className={`w-full max-w-[24px] sm:max-w-[32px] rounded-t-md transition-all duration-300 ${
                       hasRain
-                        ? isHovered
-                          ? 'bg-cyan-400 shadow-lg shadow-blue-500/50'
-                          : 'bg-gradient-to-t from-blue-700 to-cyan-500'
-                        : 'bg-slate-800'
+                        ? isHovered || isSelected
+                          ? 'bg-gradient-to-t from-blue-600 to-cyan-300 shadow-lg shadow-cyan-500/40 ring-1 ring-cyan-300 scale-105'
+                          : 'bg-gradient-to-t from-blue-700 to-cyan-500 hover:from-blue-600 hover:to-cyan-400'
+                        : 'bg-slate-800 hover:bg-slate-700'
                     }`}
                   />
 
-                  {/* X Axis Month Label */}
-                  <span className="text-[9px] sm:text-[10px] font-mono mt-1.5 text-slate-300 font-semibold uppercase">
-                    {m.shortName}
-                  </span>
+                  {/* X Axis Month Label & Days Sub-label */}
+                  <div className="flex flex-col items-center mt-1.5">
+                    <span
+                      className={`text-[9px] sm:text-[10px] font-mono font-semibold uppercase ${
+                        isSelected || isHovered ? 'text-cyan-300' : 'text-slate-300'
+                      }`}
+                    >
+                      {m.shortName}
+                    </span>
+                    {hasRain && (
+                      <span className="text-[8px] font-mono text-slate-400">
+                        {m.daysWithRain}d
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -400,14 +494,15 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
           <Info className="w-3 h-3 text-cyan-400 shrink-0" />
           <span>
             {viewMode === 'daily'
-              ? 'Dados pluviométricos integrados com estação meteorológica local da Costa Branca.'
-              : 'Histórico anual de precipitação pluviométrica consolidado da região salineira.'}
+              ? `Exibindo dias de ${currentMonthRecord.monthName} com registros diários de precipitação (mm).`
+              : 'Clique em qualquer mês acima para expandir e analisar cada dia do mês.'}
           </span>
         </div>
         <div className="flex items-center gap-1 text-slate-500">
-          <span>Atualizado em tempo real</span>
+          <span>Estação Meteorológica Integrada</span>
         </div>
       </div>
     </div>
   );
 };
+
