@@ -3,6 +3,7 @@ import { Navbar } from './components/Navbar';
 import { CurrentTideCard } from './components/CurrentTideCard';
 import { TideChart24h } from './components/TideChart24h';
 import { WeeklyWeatherForecast } from './components/WeeklyWeatherForecast';
+import { RainfallChart } from './components/RainfallChart';
 import { InteractiveNauticalMap } from './components/InteractiveNauticalMap';
 import { TideTableMonthly } from './components/TideTableMonthly';
 import { InformativoGenerator } from './components/InformativoGenerator';
@@ -207,6 +208,9 @@ export default function App() {
               port={activePort}
               loading={weatherLoading}
             />
+
+            {/* 4. Pluviometer & Rainfall Monitor (Chuva no Período - Diário / Mensal) */}
+            <RainfallChart port={activePort} />
 
             {/* Quick Actions & Navigation Module */}
             <div className="bg-slate-900/90 rounded-xl sm:rounded-2xl border border-slate-800 p-2.5 sm:p-4 shadow-xl text-slate-100">
