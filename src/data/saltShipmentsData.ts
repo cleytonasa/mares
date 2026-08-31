@@ -704,8 +704,8 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     year: 2026,
   },
   {
-    id: 'sln2026030',
-    visitCode: 'SLN2026030',
+    id: 'sln2026029',
+    visitCode: 'SLN2026029',
     vesselName: 'CLIPPER BARI STAR',
     loaMeters: 179.97,
     dwt: 37976,
@@ -724,15 +724,15 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     year: 2026,
   },
   {
-    id: 'sln2026029',
-    visitCode: 'SLN2026029',
+    id: 'sln2026030',
+    visitCode: 'SLN2026030',
     vesselName: 'GANNET BULKER',
     loaMeters: 189.99,
     dwt: 57809,
     eta: '23/08/2026 21:30',
     etb: '27/08/2026 14:00',
-    etd: '31/08/2026 08:00',
-    status: 'Em operação',
+    etd: '31/08/2026 15:18',
+    status: 'Concluído',
     scVolumeTons: 45780,
     sqVolumeTons: 0,
     totalVolumeTons: 45780,
@@ -920,54 +920,54 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Ago',
     year: 2026,
     vesselCount: 5,
-    concludedCount: 4,
-    operatingCount: 1,
+    concludedCount: 5,
+    operatingCount: 0,
     plannedCount: 0,
-    concludedTotalVolume: 131700, // Somente navios Concluídos: MARCOS DIAS (43.000) + CALLIO (24.450) + SUNLIGHT (28.100) + CLIPPER BARI STAR (36.150)
-    concludedScTotal: 97200,
+    concludedTotalVolume: 177480, // Todos os 5 navios concluídos em Agosto
+    concludedScTotal: 142980,
     concludedSqTotal: 34500,
     scTotal: 142980,
     sqTotal: 34500,
-    totalVolume: 177480, // Total line-up de Agosto (Concluídos + Em operação)
+    totalVolume: 177480,
     salinorVolume: 149380,
     sdbVolume: 28100,
-    salinorConcludedVolume: 103600,
+    salinorConcludedVolume: 149380,
     sdbConcludedVolume: 28100,
     expVolume: 134480,
     cbtVolume: 43000,
-    expConcludedVolume: 88700,
+    expConcludedVolume: 134480,
     cbtConcludedVolume: 43000,
   },
 ];
 
-export const LINEUP_LAST_UPDATED = '27/08/2026 15:30';
+export const LINEUP_LAST_UPDATED = '31/08/2026 17:39';
 
 export const OVERALL_TOTALS = {
-  // Total Embarcado (Somente Navios Concluídos)
-  concludedTotalTons: 1171739, // 1.171.739 toneladas efetivamente embarcadas (Jan a Ago)
-  concludedScTotalTons: 776136,
+  // Total Embarcado Concluído (Janeiro a Agosto 2026)
+  concludedTotalTons: 1217519, // 1.217.519 toneladas efetivamente embarcadas (100% concluídas)
+  concludedScTotalTons: 821916,
   concludedSqTotalTons: 395603,
-  concludedVessels: 33,
-  concludedSalinorTons: 1018089,
+  concludedVessels: 34,
+  concludedSalinorTons: 1063869,
   concludedSdbTons: 153650,
-  concludedExpTons: 689106,
+  concludedExpTons: 734886,
   concludedCbtTons: 482633,
 
   // Totais Consolidados do Line-up
-  totalTons: 1171739, // Total Embarcado Concluído
-  scTotalTons: 776136,
+  totalTons: 1217519,
+  scTotalTons: 821916,
   sqTotalTons: 395603,
-  totalVessels: 34, // Total de navios no line-up (33 concluídos + 1 em operação)
-  salinorTotalTons: 1018089,
+  totalVessels: 34,
+  salinorTotalTons: 1063869,
   sdbTotalTons: 153650,
-  expTotalTons: 689106,
+  expTotalTons: 734886,
   cbtTotalTons: 482633,
-  monthlyAverageTons: 146467, // 1.171.739 / 8
-  vesselAverageTons: 35507, // 1.171.739 / 33
+  monthlyAverageTons: 152190, // 1.217.519 / 8 meses
+  vesselAverageTons: 35809, // 1.217.519 / 34 navios
 
-  // Informações adicionais de Navios Em Operação e Previstos
-  operatingTotalTons: 45780,
-  operatingVessels: 1,
+  // Informações adicionais
+  operatingTotalTons: 0,
+  operatingVessels: 0,
   plannedTotalTons: 0,
   plannedVessels: 0,
   totalProgrammedTons: 1217519,
