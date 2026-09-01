@@ -160,7 +160,7 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
                 <div className="flex items-center gap-1.5">
                   <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
                     <Calendar className="w-2.5 h-2.5 text-cyan-400" />
-                    <span>Próximo Previsto</span>
+                    <span>Navio Previsto</span>
                   </span>
                   <span className="text-xs font-black text-white font-mono">
                     {nextPlannedVessel.vesselName}

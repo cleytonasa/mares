@@ -271,7 +271,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] text-cyan-400 font-black uppercase tracking-wider">
-                      PRÓXIMO PREVISTO
+                      NAVIO PREVISTO
                     </span>
                   </div>
                   <div className="text-xs font-black text-white font-mono flex items-center gap-1.5 mt-0.5">
