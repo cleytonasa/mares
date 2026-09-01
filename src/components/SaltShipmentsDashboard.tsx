@@ -45,7 +45,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
   const [copiedNotification, setCopiedNotification] = useState<boolean>(false);
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null);
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
-  const [timelineMonth, setTimelineMonth] = useState<number>(8); // Default to August 2026 (latest month with Concluded, Operating, and Planned vessels)
+  const [timelineMonth, setTimelineMonth] = useState<number>(9); // Default to September 2026 (current active line-up month)
 
   // Active Operating Vessel & Next Planned Vessel
   const activeOperatingVessel = useMemo(() => SALT_SHIPMENTS_2026.find((v) => v.status === 'Em operação'), []);
@@ -169,7 +169,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
   // Copy formatted WhatsApp report
   const handleCopyWhatsAppReport = () => {
-    const monthLabel = selectedMonth === 'ALL' ? 'Janeiro a Agosto / 2026' : MONTHLY_SALT_SUMMARIES.find((m) => m.month === selectedMonth)?.monthName + ' / 2026';
+    const monthLabel = selectedMonth === 'ALL' ? 'Janeiro a Setembro / 2026' : MONTHLY_SALT_SUMMARIES.find((m) => m.month === selectedMonth)?.monthName + ' / 2026';
     
     let text = `⚓ *INTERSAL - RELATÓRIO DE EMBARQUE DE SAL (TERMISA)*\n`;
     text += `📅 *Período:* ${monthLabel}\n`;
@@ -221,7 +221,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                   INTERSAL
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold">
-                  Jan a Ago / 2026
+                  Jan a Set / 2026
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-slate-950/90 text-cyan-300 border border-cyan-500/40 text-[10px] font-mono font-medium flex items-center gap-1">
                   <Clock className="w-2.5 h-2.5 text-cyan-400" />
@@ -407,7 +407,9 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                           <span className="text-slate-300 font-semibold">{v.shipper}</span>
                           <span>({v.trafficType})</span>
                           <span>•</span>
-                          <span className="text-slate-400">{v.loaMeters.toFixed(1)}m LOA • {v.dwt.toLocaleString('pt-BR')} DWT</span>
+                          <span className="text-slate-400">
+                            {v.loaMeters > 0 ? `${v.loaMeters.toFixed(1)}m LOA` : 'LOA a definir (TBN)'} • {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'DWT a definir'}
+                          </span>
                         </div>
                       </div>
 
@@ -492,7 +494,9 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                           <span className="text-slate-300 font-semibold">{v.shipper}</span>
                           <span>({v.trafficType})</span>
                           <span>•</span>
-                          <span className="text-slate-400">{v.loaMeters.toFixed(1)}m LOA • {v.dwt.toLocaleString('pt-BR')} DWT</span>
+                          <span className="text-slate-400">
+                            {v.loaMeters > 0 ? `${v.loaMeters.toFixed(1)}m LOA` : 'LOA a definir (TBN)'} • {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'DWT a definir'}
+                          </span>
                         </div>
                       </div>
 
@@ -577,7 +581,9 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                           <span className="text-slate-300 font-semibold">{v.shipper}</span>
                           <span>({v.trafficType})</span>
                           <span>•</span>
-                          <span className="text-slate-400">{v.loaMeters.toFixed(1)}m LOA • {v.dwt.toLocaleString('pt-BR')} DWT</span>
+                          <span className="text-slate-400">
+                            {v.loaMeters > 0 ? `${v.loaMeters.toFixed(1)}m LOA` : 'LOA a definir (TBN)'} • {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'DWT a definir'}
+                          </span>
                         </div>
                       </div>
 
@@ -662,7 +668,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                   : `${filteredTotals.concludedCount} navios concluídos`}
               </span>
               <span>•</span>
-              <span>Média: {(filteredTotals.concludedVolume / (selectedMonth === 'ALL' ? 8 : 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} t/mês</span>
+              <span>Média: {(filteredTotals.concludedVolume / (selectedMonth === 'ALL' ? (MONTHLY_SALT_SUMMARIES.filter(m => m.concludedCount > 0).length || 1) : 1)).toLocaleString('pt-BR', { maximumFractionDigits: 0 })} t/mês</span>
             </div>
           </div>
           <div className="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
@@ -1258,7 +1264,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                   : 'bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
-              Todos (8 meses)
+              Todos ({MONTHLY_SALT_SUMMARIES.length} meses)
             </button>
             {MONTHLY_SALT_SUMMARIES.map((m) => (
               <button
@@ -1454,8 +1460,12 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
                     {/* LOA & DWT */}
                     <td className="py-3 px-3 text-right whitespace-nowrap">
-                      <div className="font-mono font-bold text-slate-200">{v.loaMeters.toFixed(2)} m</div>
-                      <div className="text-[10px] text-slate-400 font-mono">{v.dwt.toLocaleString('pt-BR')} DWT</div>
+                      <div className="font-mono font-bold text-slate-200">
+                        {v.loaMeters > 0 ? `${v.loaMeters.toFixed(2)} m` : '-'}
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-mono">
+                        {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'A definir (TBN)'}
+                      </div>
                     </td>
 
                     {/* Dates */}
