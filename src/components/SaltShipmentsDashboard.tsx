@@ -872,7 +872,10 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
           {chartType === 'bar' ? (
             /* Visual Interactive Stacked Bars */
             <div className="space-y-3 pt-2">
-              <div className="grid grid-cols-8 gap-1.5 sm:gap-3 h-48 sm:h-56 items-end">
+              <div 
+                className="grid gap-1.5 sm:gap-3 h-48 sm:h-56 items-end"
+                style={{ gridTemplateColumns: `repeat(${MONTHLY_SALT_SUMMARIES.length}, minmax(0, 1fr))` }}
+              >
                 {MONTHLY_SALT_SUMMARIES.map((m) => {
                   const total = m.totalVolume;
                   const heightPct = Math.round((total / maxMonthlyVolume) * 100);
@@ -1004,10 +1007,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                     );
                   })}
 
-                  {/* Calculate SVG Coordinates for the 8 months */}
+                  {/* Calculate SVG Coordinates for all months dynamically */}
                   {(() => {
+                    const numMonths = MONTHLY_SALT_SUMMARIES.length;
                     const coords = MONTHLY_SALT_SUMMARIES.map((m, idx) => {
-                      const x = 55 + (idx / 7) * 620;
+                      const x = 55 + (idx / Math.max(numMonths - 1, 1)) * 620;
                       const yTotal = 150 - (m.totalVolume / 250000) * 125;
                       const ySc = 150 - (m.scTotal / 250000) * 125;
                       const ySq = 150 - (m.sqTotal / 250000) * 125;
