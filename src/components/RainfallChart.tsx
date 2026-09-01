@@ -1,14 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import {
-  CloudRain,
   Droplets,
   Calendar,
   BarChart3,
-  TrendingUp,
   Maximize2,
   Minimize2,
   Info,
-  CalendarDays,
   ChevronLeft,
 } from 'lucide-react';
 import { PortConfig } from '../types/maritime';
@@ -65,23 +62,6 @@ const MACAU_MONTHLY: MonthlyRainRecord[] = [
   { month: 12, monthName: 'Dezembro', shortName: 'Dez', rainMm: 0.0, daysWithRain: 0 },
 ];
 
-// Generate 31 days for August 2026 (Matching user's exact dashboard screenshot: Aug 9 = 1.6mm, Aug 25 = 0.4mm, total = 2.0mm)
-const AUGUST_2026_DAYS: DailyRainRecord[] = Array.from({ length: 31 }, (_, i) => {
-  const day = i + 1;
-  let rain = 0;
-  if (day === 9) rain = 1.6;
-  if (day === 24 || day === 25) rain = day === 25 ? 0.4 : 0.0;
-
-  return {
-    date: `2026-08-${String(day).padStart(2, '0')}`,
-    dayLabel: `${String(day).padStart(2, '0')}/08`,
-    dayOfMonth: day,
-    month: 8,
-    monthName: 'Agosto',
-    rainMm: rain,
-  };
-});
-
 // Seeded realistic daily distributions for historical months in 2026
 const HISTORICAL_MONTH_RAIN_DISTRIBUTIONS: Record<number, number[]> = {
   1: [0, 0, 4.2, 0, 0, 0, 8.6, 0, 0, 0, 0, 0, 0, 5.6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // 3 days: 18.4mm
@@ -91,11 +71,20 @@ const HISTORICAL_MONTH_RAIN_DISTRIBUTIONS: Record<number, number[]> = {
   5: [0, 12.0, 0, 0, 8.4, 0, 0, 14.6, 0, 0, 9.2, 0, 0, 6.8, 0, 0, 7.5, 0, 0, 5.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // 8 days: 64.0mm
   6: [0, 0, 7.8, 0, 0, 0, 9.2, 0, 0, 6.5, 0, 0, 5.0, 0, 0, 0, 0, 4.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // 5 days: 32.5mm
   7: [0, 0, 0, 0, 5.4, 0, 0, 0, 0, 0, 6.2, 0, 0, 0, 0, 0, 2.6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // 3 days: 14.2mm
+  8: [0, 0, 0, 0, 0, 0, 0, 0, 1.6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4, 0, 0, 0, 0, 0, 0], // 2 days: 2.0mm (09/08 = 1.6mm, 25/08 = 0.4mm)
+  9: Array(30).fill(0), // Setembro 2026
+  10: Array(31).fill(0),
+  11: Array(30).fill(0),
+  12: Array(31).fill(0),
 };
 
 export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
+  // Automatically identify current calendar month (e.g. 9 for September)
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
-  const [selectedMonth, setSelectedMonth] = useState<number>(8); // August by default
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => {
+    const currentM = new Date().getMonth() + 1;
+    return currentM >= 1 && currentM <= 12 ? currentM : 9;
+  });
   const [expanded, setExpanded] = useState<boolean>(false);
   const [hoveredDailyDate, setHoveredDailyDate] = useState<string | null>(null);
   const [hoveredMonth, setHoveredMonth] = useState<MonthlyRainRecord | null>(null);
@@ -103,14 +92,10 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
   const isMacau = port.name.toLowerCase().includes('macau');
   const monthlyData = isMacau ? MACAU_MONTHLY : AREIA_BRANCA_MONTHLY;
 
-  // Daily records calculated with exact daily distribution
+  // Daily records calculated with exact daily distribution for selected month
   const dailyData = useMemo(() => {
-    if (selectedMonth === 8) {
-      return AUGUST_2026_DAYS;
-    }
-
     const daysInMonth = new Date(2026, selectedMonth, 0).getDate();
-    const monthRecord = monthlyData.find((m) => m.month === selectedMonth) || monthlyData[7];
+    const monthRecord = monthlyData.find((m) => m.month === selectedMonth) || monthlyData[selectedMonth - 1] || monthlyData[0];
     const fixedRains = HISTORICAL_MONTH_RAIN_DISTRIBUTIONS[selectedMonth] || [];
 
     return Array.from({ length: daysInMonth }, (_, i) => {
@@ -171,7 +156,10 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
     setViewMode('daily');
   };
 
-  const currentMonthRecord = monthlyData.find((m) => m.month === selectedMonth) || monthlyData[7];
+  const currentMonthRecord =
+    monthlyData.find((m) => m.month === selectedMonth) ||
+    monthlyData[selectedMonth - 1] ||
+    monthlyData[0];
 
   return (
     <div
@@ -262,7 +250,7 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs pt-1">
         <div className="flex items-center gap-2 text-slate-300">
           <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
-          <span className="font-semibold text-slate-200">
+          <span className="font-semibold text-white">
             {viewMode === 'daily'
               ? `Pluviômetro Diário • ${currentMonthRecord.monthName} 2026`
               : 'Pluviômetro Mensal (Clique no mês para ver os dias)'}
@@ -272,19 +260,19 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
           </span>
         </div>
 
-        {/* Max / Avg / Total Header Stats */}
-        <div className="flex items-center gap-4 sm:gap-6 font-mono text-xs">
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-sans">Max</span>
-            <span className="font-bold text-white">{stats.max} mm</span>
+        {/* 3 Metrics: MAX, AVG, TOTAL */}
+        <div className="flex items-center gap-4 sm:gap-6 font-mono">
+          <div className="text-right">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Max</span>
+            <span className="text-xs sm:text-sm font-bold text-white">{stats.max} mm</span>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-sans">Avg</span>
-            <span className="font-bold text-slate-300">{stats.avg} mm</span>
+          <div className="text-right">
+            <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Avg</span>
+            <span className="text-xs sm:text-sm font-bold text-white">{stats.avg} mm</span>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider font-sans">Total</span>
-            <span className="font-black text-blue-400 text-sm">{stats.total} mm</span>
+          <div className="text-right">
+            <span className="text-[10px] text-cyan-400 uppercase tracking-wider block font-bold">Total</span>
+            <span className="text-xs sm:text-sm font-extrabold text-blue-400">{stats.total} mm</span>
           </div>
         </div>
       </div>
@@ -409,12 +397,14 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
                     className={`text-[8px] sm:text-[9px] font-mono mt-1.5 transition ${
                       hasRain
                         ? 'text-cyan-300 font-bold'
-                        : d.dayOfMonth % 4 === 1 || d.dayOfMonth === dailyData.length
+                        : d.dayOfMonth % 4 === 1 || d.dayOfMonth === 1
                         ? 'text-slate-400 font-semibold'
                         : 'text-slate-600 hidden sm:inline'
                     }`}
                   >
-                    {d.dayOfMonth % 4 === 1 ? `Aug ${String(d.dayOfMonth).padStart(2, '0')}` : d.dayOfMonth}
+                    {d.dayOfMonth % 4 === 1 || d.dayOfMonth === 1
+                      ? `${currentMonthRecord.shortName} ${String(d.dayOfMonth).padStart(2, '0')}`
+                      : d.dayOfMonth}
                   </span>
                 </div>
               );
@@ -505,4 +495,3 @@ export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
     </div>
   );
 };
-
