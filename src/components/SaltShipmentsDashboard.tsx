@@ -910,7 +910,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                               ? 'border-cyan-400 bg-cyan-950/40 ring-1 ring-cyan-400'
                               : 'group-hover:border-slate-500 group-hover:bg-slate-800/60'
                           }`}
-                          title={`${m.monthName}: 0 toneladas finalizadas (${m.plannedCount || m.vesselCount} navios previstos)`}
+                          title={`${m.monthName}: 0 toneladas finalizadas (${m.operatingCount ? `${m.operatingCount} em operação, ` : ''}${m.plannedCount || m.vesselCount} previstos)`}
                         />
                       ) : (
                         <div
@@ -966,7 +966,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                         </span>
                         <div className="text-[9px] text-slate-500 mt-0.5 hidden sm:block font-mono">
                           {isMonthEmpty ? (
-                            <span className="text-amber-400/80">{m.plannedCount || m.vesselCount} prev.</span>
+                            m.operatingCount && m.operatingCount > 0 ? (
+                              <span className="text-emerald-400 font-bold">1 oper.</span>
+                            ) : (
+                              <span className="text-amber-400/80">{m.plannedCount || m.vesselCount} prev.</span>
+                            )
                           ) : (
                             `${m.vesselCount} navios`
                           )}
