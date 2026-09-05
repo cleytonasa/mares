@@ -333,8 +333,8 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
               <button
                 type="button"
-                onClick={() => setTimelineMonth((prev) => Math.min(8, prev + 1))}
-                disabled={timelineMonth === 8}
+                onClick={() => setTimelineMonth((prev) => Math.min(MONTHLY_SALT_SUMMARIES.length, prev + 1))}
+                disabled={timelineMonth === MONTHLY_SALT_SUMMARIES.length}
                 className="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 hover:text-white hover:bg-slate-800"
                 title="Ver próximo mês"
               >
@@ -877,10 +877,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                 style={{ gridTemplateColumns: `repeat(${MONTHLY_SALT_SUMMARIES.length}, minmax(0, 1fr))` }}
               >
                 {MONTHLY_SALT_SUMMARIES.map((m) => {
-                  const total = m.totalVolume;
-                  const heightPct = Math.round((total / maxMonthlyVolume) * 100);
-                  const scPct = (m.scTotal / total) * 100;
-                  const sqPct = (m.sqTotal / total) * 100;
+                  const isMonthEmpty = (m.concludedTotalVolume === 0 && (m.concludedCount === 0 || m.concludedCount === undefined));
+                  const total = isMonthEmpty ? 0 : m.concludedTotalVolume;
+                  const heightPct = total > 0 ? Math.round((total / maxMonthlyVolume) * 100) : 0;
+                  const scPct = total > 0 ? (m.concludedScTotal / total) * 100 : 0;
+                  const sqPct = total > 0 ? (m.concludedSqTotal / total) * 100 : 0;
                   const isSelected = selectedMonth === m.month;
                   const isRecord = m.month === 5; // Maio recorde 214k
                   const isSqRecord = m.month === 7; // Julho recorde SQ 112k
@@ -894,49 +895,63 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                       className="flex flex-col items-center h-full justify-end group cursor-pointer"
                     >
                       {/* Value Badge on top */}
-                      <div className="text-[9px] sm:text-[11px] font-bold text-slate-300 group-hover:text-white mb-1 transition text-center whitespace-nowrap">
-                        {(total / 1000).toFixed(0)}k
+                      <div className={`text-[9px] sm:text-[11px] font-bold mb-1 transition text-center whitespace-nowrap ${
+                        isMonthEmpty ? 'text-slate-500 font-mono' : 'text-slate-300 group-hover:text-white'
+                      }`}>
+                        {isMonthEmpty ? '0k' : `${(total / 1000).toFixed(0)}k`}
                       </div>
 
                       {/* Stacked Bar Container */}
-                      <div
-                        className={`w-full max-w-[48px] rounded-t-lg overflow-hidden flex flex-col justify-end transition-all duration-300 relative border ${
-                          isSelected
-                            ? 'border-cyan-400 ring-2 ring-cyan-400/40 shadow-lg shadow-cyan-500/20'
-                            : 'border-transparent group-hover:border-slate-600'
-                        }`}
-                        style={{ height: `${heightPct}%` }}
-                      >
-                        {/* Highlight badges for special months */}
-                        {isRecord && (
-                          <div className="absolute top-0 inset-x-0 bg-amber-500 text-slate-950 text-[8px] font-extrabold text-center py-0.5 uppercase tracking-tighter">
-                            Recorde
-                          </div>
-                        )}
-                        {isSqRecord && (
-                          <div className="absolute top-0 inset-x-0 bg-emerald-500 text-slate-950 text-[8px] font-extrabold text-center py-0.5 uppercase tracking-tighter">
-                            Top SQ
-                          </div>
-                        )}
+                      {isMonthEmpty ? (
+                        /* Barra vazia para mês sem navios finalizados */
+                        <div
+                          className={`w-full max-w-[48px] h-2.5 rounded-t bg-slate-800/40 border-t-2 border-dashed border-slate-700 transition-all ${
+                            isSelected
+                              ? 'border-cyan-400 bg-cyan-950/40 ring-1 ring-cyan-400'
+                              : 'group-hover:border-slate-500 group-hover:bg-slate-800/60'
+                          }`}
+                          title={`${m.monthName}: 0 toneladas finalizadas (${m.plannedCount || m.vesselCount} navios previstos)`}
+                        />
+                      ) : (
+                        <div
+                          className={`w-full max-w-[48px] rounded-t-lg overflow-hidden flex flex-col justify-end transition-all duration-300 relative border ${
+                            isSelected
+                              ? 'border-cyan-400 ring-2 ring-cyan-400/40 shadow-lg shadow-cyan-500/20'
+                              : 'border-transparent group-hover:border-slate-600'
+                          }`}
+                          style={{ height: `${heightPct}%` }}
+                        >
+                          {/* Highlight badges for special months */}
+                          {isRecord && (
+                            <div className="absolute top-0 inset-x-0 bg-amber-500 text-slate-950 text-[8px] font-extrabold text-center py-0.5 uppercase tracking-tighter">
+                              Recorde
+                            </div>
+                          )}
+                          {isSqRecord && (
+                            <div className="absolute top-0 inset-x-0 bg-emerald-500 text-slate-950 text-[8px] font-extrabold text-center py-0.5 uppercase tracking-tighter">
+                              Top SQ
+                            </div>
+                          )}
 
-                        {/* SQ Portion (Top) */}
-                        {sqPct > 0 && (
-                          <div
-                            className="w-full bg-emerald-400 group-hover:bg-emerald-300 transition-colors relative"
-                            style={{ height: `${sqPct}%` }}
-                            title={`Sal Químico: ${m.sqTotal.toLocaleString('pt-BR')} t`}
-                          />
-                        )}
+                          {/* SQ Portion (Top) */}
+                          {sqPct > 0 && (
+                            <div
+                              className="w-full bg-emerald-400 group-hover:bg-emerald-300 transition-colors relative"
+                              style={{ height: `${sqPct}%` }}
+                              title={`Sal Químico: ${m.concludedSqTotal.toLocaleString('pt-BR')} t`}
+                            />
+                          )}
 
-                        {/* SC Portion (Bottom) */}
-                        {scPct > 0 && (
-                          <div
-                            className="w-full bg-cyan-600 group-hover:bg-cyan-500 transition-colors"
-                            style={{ height: `${scPct}%` }}
-                            title={`Sal Comum: ${m.scTotal.toLocaleString('pt-BR')} t`}
-                          />
-                        )}
-                      </div>
+                          {/* SC Portion (Bottom) */}
+                          {scPct > 0 && (
+                            <div
+                              className="w-full bg-cyan-600 group-hover:bg-cyan-500 transition-colors"
+                              style={{ height: `${scPct}%` }}
+                              title={`Sal Comum: ${m.concludedScTotal.toLocaleString('pt-BR')} t`}
+                            />
+                          )}
+                        </div>
+                      )}
 
                       {/* Month Label */}
                       <div className="mt-2 text-center">
@@ -950,7 +965,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                           {m.shortMonth}
                         </span>
                         <div className="text-[9px] text-slate-500 mt-0.5 hidden sm:block font-mono">
-                          {m.vesselCount} navios
+                          {isMonthEmpty ? (
+                            <span className="text-amber-400/80">{m.plannedCount || m.vesselCount} prev.</span>
+                          ) : (
+                            `${m.vesselCount} navios`
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1012,10 +1031,14 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                     const numMonths = MONTHLY_SALT_SUMMARIES.length;
                     const coords = MONTHLY_SALT_SUMMARIES.map((m, idx) => {
                       const x = 55 + (idx / Math.max(numMonths - 1, 1)) * 620;
-                      const yTotal = 150 - (m.totalVolume / 250000) * 125;
-                      const ySc = 150 - (m.scTotal / 250000) * 125;
-                      const ySq = 150 - (m.sqTotal / 250000) * 125;
-                      return { x, yTotal, ySc, ySq, ...m };
+                      const isMonthEmpty = (m.concludedTotalVolume === 0 && (m.concludedCount === 0 || m.concludedCount === undefined));
+                      const volume = isMonthEmpty ? 0 : m.concludedTotalVolume;
+                      const scVolume = isMonthEmpty ? 0 : m.concludedScTotal;
+                      const sqVolume = isMonthEmpty ? 0 : m.concludedSqTotal;
+                      const yTotal = 150 - (volume / 250000) * 125;
+                      const ySc = 150 - (scVolume / 250000) * 125;
+                      const ySq = 150 - (sqVolume / 250000) * 125;
+                      return { x, yTotal, ySc, ySq, volume, scVolume, sqVolume, isMonthEmpty, ...m };
                     });
 
                     const totalLinePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x} ${c.yTotal}`).join(' ');
@@ -1085,7 +1108,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                               )}
 
                               {/* SQ Point */}
-                              {c.sqTotal > 0 && (
+                              {c.sqVolume > 0 && (
                                 <circle
                                   cx={c.x}
                                   cy={c.ySq}
@@ -1101,7 +1124,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                                 cx={c.x}
                                 cy={c.yTotal}
                                 r={isSelected ? 6 : isHovered ? 5.5 : 4}
-                                fill={isSelected ? '#22d3ee' : '#06b6d4'}
+                                fill={c.isMonthEmpty ? '#64748b' : isSelected ? '#22d3ee' : '#06b6d4'}
                                 stroke="#0f172a"
                                 strokeWidth="2.5"
                                 className="transition-all"
@@ -1124,12 +1147,12 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                                 x={c.x}
                                 y={c.yTotal - 8}
                                 textAnchor="middle"
-                                fill={isSelected ? '#38bdf8' : '#e2e8f0'}
+                                fill={c.isMonthEmpty ? '#64748b' : isSelected ? '#38bdf8' : '#e2e8f0'}
                                 fontSize="9"
                                 fontWeight="bold"
                                 fontFamily="monospace"
                               >
-                                {(c.totalVolume / 1000).toFixed(0)}k
+                                {c.isMonthEmpty ? '0k' : `${(c.volume / 1000).toFixed(0)}k`}
                               </text>
                             </g>
                           );
