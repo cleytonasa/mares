@@ -1,5 +1,7 @@
 ---
 deployment:
   tasks:
-    - /bin/echo "Deploy sincronizado com sucesso!"
-
+    - export DEPLOYPATH=/home1/cleyt730/public_html/mares
+    - /bin/cp -rf production/* $DEPLOYPATH/
+    - /bin/cp -f production/.htaccess $DEPLOYPATH/.htaccess
+    - /bin/echo "Deploy automatico da pasta production concluido com sucesso!"
