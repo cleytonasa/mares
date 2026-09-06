@@ -4,13 +4,8 @@
 export interface SaltVesselRecord {
   id: string;
   visitCode: string;
-  voyageNumber?: string;
   vesselName: string;
   loaMeters: number;
-  loa?: number;
-  beam?: number;
-  draughtArrival?: number;
-  flag?: string;
   dwt: number;
   eta: string;
   etb: string;
@@ -21,16 +16,11 @@ export interface SaltVesselRecord {
   totalVolumeTons: number;
   trafficType: 'EXP' | 'CBT'; // Exportação vs Cabotagem
   trafficLabel: string;
-  shipper: 'SALINOR' | 'SDB' | 'SEA SALT' | string;
-  destination?: string;
-  notes?: string;
-  productType?: string;
-  month: number; // 1 to 12
+  shipper: 'SALINOR' | 'SDB' | 'SEA SALT';
+  month: number; // 1 to 8
   monthName: string;
   year: number;
 }
-
-export type SaltShipmentVessel = SaltVesselRecord;
 
 export interface MonthlySaltSummary {
   month: number;
@@ -44,8 +34,6 @@ export interface MonthlySaltSummary {
   concludedTotalVolume: number;
   concludedScTotal: number;
   concludedSqTotal: number;
-  operatingTotalVolume?: number;
-  plannedTotalVolume?: number;
   scTotal: number;
   sqTotal: number;
   totalVolume: number;
@@ -767,7 +755,7 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     eta: '03/09/2026 00:01',
     etb: '03/09/2026 09:00',
     etd: '06/09/2026 12:00',
-    status: 'Em operação',
+    status: 'Previsto',
     scVolumeTons: 20350,
     sqVolumeTons: 14350,
     totalVolumeTons: 34700,
@@ -1040,8 +1028,8 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     year: 2026,
     vesselCount: 4,
     concludedCount: 0,
-    operatingCount: 1,
-    plannedCount: 3,
+    operatingCount: 0,
+    plannedCount: 4,
     concludedTotalVolume: 0,
     concludedScTotal: 0,
     concludedSqTotal: 0,
@@ -1059,7 +1047,7 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
   },
 ];
 
-export const LINEUP_LAST_UPDATED = '05/09/2026 03:50';
+export const LINEUP_LAST_UPDATED = '01/09/2026 10:48';
 
 export const OVERALL_TOTALS = {
   // Total Embarcado Concluído (Janeiro a Agosto 2026)
@@ -1085,9 +1073,9 @@ export const OVERALL_TOTALS = {
   vesselAverageTons: 35809, // 1.217.519 / 34 navios
 
   // Programação e Previsão
-  operatingTotalTons: 34700,
-  operatingVessels: 1,
-  plannedTotalTons: 116000,
-  plannedVessels: 3,
-  totalProgrammedTons: 1368219, // 1.217.519 (Concluídos) + 34.700 (Em operação) + 116.000 (Previstos Setembro)
+  operatingTotalTons: 0,
+  operatingVessels: 0,
+  plannedTotalTons: 150700,
+  plannedVessels: 4,
+  totalProgrammedTons: 1368219, // 1.217.519 (Concluídos) + 150.700 (Previstos Setembro)
 };

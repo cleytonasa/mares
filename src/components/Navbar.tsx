@@ -1,5 +1,5 @@
 import React from 'react';
-import { Anchor, Bell, BellRing, Compass, Map, Ship, Table, Waves, ShieldCheck } from 'lucide-react';
+import { Anchor, Bell, BellRing, Compass, Map, Ship, Table, Waves } from 'lucide-react';
 import { PortConfig, CustomUserLocation } from '../types/maritime';
 import { IntersalLogo } from './IntersalLogo';
 
@@ -12,8 +12,6 @@ interface NavbarProps {
   userLocation: CustomUserLocation;
   notificationsEnabled?: boolean;
   onOpenNotifications: () => void;
-  isAdminLoggedIn?: boolean;
-  onOpenAdmin: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -25,8 +23,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   userLocation,
   notificationsEnabled = false,
   onOpenNotifications,
-  isAdminLoggedIn = false,
-  onOpenAdmin,
 }) => {
   return (
     <header className="bg-slate-900 text-slate-100 border-b border-slate-800 sticky top-0 z-40 shadow-lg">
@@ -176,25 +172,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Table className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-emerald-400" />
                 <span className="hidden sm:inline">Tábua DHN</span>
                 <span className="sm:hidden">Tábua</span>
-              </button>
-
-              {/* Botão de Acesso Administrativo */}
-              <button
-                id="nav-btn-admin"
-                type="button"
-                onClick={onOpenAdmin}
-                title="Acesso Administrativo (Controle do Line-Up & Escalas)"
-                className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md sm:rounded-lg text-[11px] sm:text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 whitespace-nowrap border ${
-                  isAdminLoggedIn
-                    ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-300 hover:bg-emerald-900/80 shadow-sm'
-                    : 'bg-slate-900/80 border-slate-700/80 text-slate-400 hover:text-cyan-300 hover:bg-slate-800/70'
-                }`}
-              >
-                <ShieldCheck className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${isAdminLoggedIn ? 'text-emerald-400' : 'text-slate-400'}`} />
-                <span>Admin</span>
-                {isAdminLoggedIn && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                )}
               </button>
             </nav>
           </div>

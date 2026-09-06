@@ -79,8 +79,8 @@ const HISTORICAL_MONTH_RAIN_DISTRIBUTIONS: Record<number, number[]> = {
 };
 
 export const RainfallChart: React.FC<RainfallChartProps> = ({ port }) => {
-  // Automatically identify current calendar month (e.g. 9 for September)
-  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('daily');
+  // Gráfico inicia selecionado na visualização mensal ('monthly')
+  const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('monthly');
   const [selectedMonth, setSelectedMonth] = useState<number>(() => {
     const currentM = new Date().getMonth() + 1;
     return currentM >= 1 && currentM <= 12 ? currentM : 9;

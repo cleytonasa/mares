@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && mkdir -p assets production/assets dist && (cp -rf dist/assets/* assets/ 2>/dev/null || true) && (cp -rf dist/* production/ 2>/dev/null || true) && (cp -rf dist/assets/* production/assets/ 2>/dev/null || true) && (cp -f dist/index.html ./index.html 2>/dev/null || true) && (cp -f public/.htaccess dist/.htaccess 2>/dev/null || true) && (cp -f public/.htaccess production/.htaccess 2>/dev/null || true) && (cp -f public/.htaccess ./.htaccess 2>/dev/null || true) && (cp -f public/logo.svg assets/logo.svg 2>/dev/null || true) && (cp -f public/logo.svg production/logo.svg 2>/dev/null || true)",
+    "build": "vite build && mkdir -p assets production/assets && cp -rf dist/assets/* assets/ && cp -rf dist/* production/ && cp dist/assets/* production/assets/ && cp dist/.htaccess production/.htaccess && cp public/logo.svg assets/logo.svg && cp public/logo.svg production/logo.svg",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "NODE_OPTIONS='--max-old-space-size=4096' tsc --noEmit --skipLibCheck"
+    "lint": "tsc --noEmit --skipLibCheck"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -20,7 +20,6 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
-    "pdfjs-dist": "^6.3.289",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "vite": "^6.2.3"

@@ -10,9 +10,6 @@ import { InformativoGenerator } from './components/InformativoGenerator';
 import { AlertSettingsModal } from './components/AlertSettingsModal';
 import { NotificationModal } from './components/NotificationModal';
 import { SaltShipmentsDashboard } from './components/SaltShipmentsDashboard';
-import { AdminLoginModal } from './components/AdminLoginModal';
-import { AdminPanelModal } from './components/AdminPanelModal';
-import { isUserLoggedIn, syncFromServer } from './services/adminLineupService';
 import { PORTS_DATA } from './data/portsData';
 import { PortConfig, WeatherData, AlertThresholds, CustomUserLocation } from './types/maritime';
 import { INITIAL_USER_LOCATION, decimalToDMS } from './data/vesselTrafficData';
@@ -48,25 +45,6 @@ export default function App() {
 
   // Custom User Location state (starts with default, attempts real GPS)
   const [userLocation, setUserLocation] = useState<CustomUserLocation>(INITIAL_USER_LOCATION);
-
-  // Admin Modals & Auth State
-  const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
-  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(isUserLoggedIn());
-
-  // Check admin session and sync remote server data if available
-  useEffect(() => {
-    setIsAdminLoggedIn(isUserLoggedIn());
-    syncFromServer();
-  }, []);
-
-  const handleOpenAdmin = () => {
-    if (isUserLoggedIn()) {
-      setIsAdminPanelOpen(true);
-    } else {
-      setIsAdminLoginOpen(true);
-    }
-  };
 
   // Attempt real device GPS location on load
   useEffect(() => {
@@ -186,8 +164,6 @@ export default function App() {
         userLocation={userLocation}
         notificationsEnabled={notifPrefs.enabled}
         onOpenNotifications={() => setIsNotifModalOpen(true)}
-        isAdminLoggedIn={isAdminLoggedIn}
-        onOpenAdmin={handleOpenAdmin}
       />
 
       {/* Main Content Area */}
@@ -375,27 +351,6 @@ export default function App() {
         onSavePreferences={handleSaveNotifPrefs}
         port={activePort}
         tideState={currentTideState}
-      />
-
-      {/* Admin Login Modal */}
-      <AdminLoginModal
-        isOpen={isAdminLoginOpen}
-        onClose={() => setIsAdminLoginOpen(false)}
-        onSuccess={() => {
-          setIsAdminLoggedIn(true);
-          setIsAdminLoginOpen(false);
-          setIsAdminPanelOpen(true);
-        }}
-      />
-
-      {/* Admin Control & Lineup Management Modal */}
-      <AdminPanelModal
-        isOpen={isAdminPanelOpen}
-        onClose={() => setIsAdminPanelOpen(false)}
-        onLogout={() => {
-          setIsAdminLoggedIn(false);
-          setIsAdminPanelOpen(false);
-        }}
       />
     </div>
   );
