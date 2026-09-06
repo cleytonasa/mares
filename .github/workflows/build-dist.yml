@@ -1,0 +1,71 @@
+name: Build & Release Dist ZIP
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Ensure .htaccess and API scripts are in dist
+        run: |
+          if [ -f .htaccess ]; then cp .htaccess dist/; fi
+          if [ -d public/api ]; then mkdir -p dist/api && cp -rf public/api/* dist/api/; fi
+
+      - name: Create ZIP archive with dist contents
+        run: |
+          cd dist
+          zip -r ../dist-production.zip . * -x "*.DS_Store"
+          cd ..
+          echo "ZIP gerado com sucesso: $(ls -lh dist-production.zip)"
+
+      - name: Upload dist ZIP as artifact (Disponível na aba Actions)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-production
+          path: dist-production.zip
+          retention-days: 30
+
+      - name: Create or Update GitHub Release with ZIP
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: latest-build
+          name: "Line-Up & Painel Marítimo - Última Versão Compilada"
+          body: |
+            ### 🚀 Build Automático Concluído!
+            
+            - **Commit:** ${{ github.sha }}
+            - **Data/Hora:** ${{ github.event.head_commit.timestamp || 'Agora' }}
+            
+            #### 📦 Como usar na sua hospedagem (cPanel / Apache):
+            1. Baixe o arquivo **`dist-production.zip`** anexado abaixo.
+            2. Acesse o **Gerenciador de Arquivos** da sua hospedagem.
+            3. Envie o arquivo para dentro da pasta `public_html/` (ou do seu subdomínio).
+            4. Clique em **Extrair (Extract)**.
+            5. Pronto! O site estará 100% atualizado.
+          files: |
+            dist-production.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
