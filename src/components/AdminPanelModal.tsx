@@ -17,9 +17,14 @@ import {
   Calendar,
   Layers,
   Sparkles,
-  FileCheck
+  FileCheck,
+  Bot,
+  RefreshCw,
+  SlidersHorizontal,
+  Check
 } from 'lucide-react';
 import { SaltShipmentVessel } from '../data/saltShipmentsData';
+import { extractTextFromPdf, parseLineupText, ExtractedLineupData } from '../services/pdfLineupParser';
 import { 
   getManagedVessels, 
   saveManagedVesselsWithRemote, 
@@ -47,6 +52,12 @@ export function AdminPanelModal({ isOpen, onClose, onLogout }: AdminPanelModalPr
   const [pdfDateInput, setPdfDateInput] = useState<string>('');
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Automatic PDF Extraction & Review States
+  const [isExtractingPdf, setIsExtractingPdf] = useState(false);
+  const [extractedCandidateVessels, setExtractedCandidateVessels] = useState<Partial<SaltShipmentVessel>[]>([]);
+  const [extractedRawText, setExtractedRawText] = useState<string>('');
+  const [showExtractionReviewModal, setShowExtractionReviewModal] = useState(false);
 
   // New vessel modal state
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -207,6 +218,154 @@ export function AdminPanelModal({ isOpen, onClose, onLogout }: AdminPanelModalPr
     setStatusMessage({ type: 'success', text: `Navio ${created.vesselName} adicionado à programação!` });
   };
 
+  // Trigger Automatic Smart Extraction from the uploaded PDF
+  const triggerExtractFromPdf = async (pdfDataUrlOrFile?: string | File) => {
+    const targetSource = pdfDataUrlOrFile || pdfInfo?.dataUrl;
+    if (!targetSource) {
+      alert('Nenhum arquivo PDF encontrado para leitura. Por favor envie o PDF primeiro.');
+      return;
+    }
+
+    setIsExtractingPdf(true);
+    setStatusMessage({ type: 'success', text: 'Analisando e extraindo dados do PDF do Line-Up...' });
+
+    try {
+      const rawText = await extractTextFromPdf(targetSource);
+      setExtractedRawText(rawText);
+
+      const parsedData = parseLineupText(rawText);
+
+      if (parsedData.documentDate && !pdfDateInput.trim()) {
+        setPdfDateInput(parsedData.documentDate);
+      }
+
+      if (parsedData.vessels && parsedData.vessels.length > 0) {
+        setExtractedCandidateVessels(parsedData.vessels);
+        setShowExtractionReviewModal(true);
+        setStatusMessage({
+          type: 'success',
+          text: `Leitura concluída! ${parsedData.vessels.length} registros/horários de navios identificados para revisão.`
+        });
+      } else {
+        setStatusMessage({
+          type: 'error',
+          text: 'O texto do PDF foi extraído, mas nenhum padrão de escala de navios foi reconhecido automaticamente. Você pode continuar editando manualmente.'
+        });
+      }
+    } catch (err) {
+      console.error('Erro na extração do PDF:', err);
+      setStatusMessage({
+        type: 'error',
+        text: 'Não foi possível ler o texto do PDF automaticamente. O documento permanece salvo para visualização normal.'
+      });
+    } finally {
+      setIsExtractingPdf(false);
+    }
+  };
+
+  // Apply reviewed extracted vessels into the active vessels state
+  const handleApplyExtractedVessels = (mergeMode: 'merge' | 'replace') => {
+    if (extractedCandidateVessels.length === 0) return;
+
+    let updatedList: SaltShipmentVessel[] = [];
+
+    if (mergeMode === 'replace') {
+      // Replace only vessels for the affected months or all
+      updatedList = extractedCandidateVessels.map((cand, idx) => ({
+        id: cand.id || `vessel-extracted-${Date.now()}-${idx}`,
+        visitCode: cand.voyageNumber || `SLN20260${idx + 40}`,
+        voyageNumber: cand.voyageNumber || `SLN20260${idx + 40}`,
+        vesselName: (cand.vesselName || 'NAVIO').toUpperCase().trim(),
+        loaMeters: cand.loaMeters || 180,
+        loa: cand.loaMeters || 180,
+        beam: cand.beam || 30,
+        draughtArrival: cand.draughtArrival || 6.5,
+        flag: cand.flag || 'Panamá',
+        dwt: cand.dwt || 40000,
+        eta: cand.eta || '15/09/2026 12:00',
+        etb: cand.etb || '15/09/2026 20:00',
+        etd: cand.etd || '18/09/2026 16:00',
+        status: cand.status || 'Previsto',
+        scVolumeTons: cand.scVolumeTons || 35000,
+        sqVolumeTons: cand.sqVolumeTons || 0,
+        totalVolumeTons: (cand.scVolumeTons || 35000) + (cand.sqVolumeTons || 0),
+        trafficType: cand.trafficType || 'CBT',
+        trafficLabel: cand.trafficLabel || 'Cabotagem',
+        shipper: cand.shipper || 'SALINOR',
+        destination: cand.destination || 'Cabotagem',
+        productType: cand.productType || 'Sal Comum',
+        notes: cand.notes || 'Extraído automaticamente via PDF Line-Up',
+        month: cand.month || 9,
+        monthName: cand.monthName || 'Setembro',
+        year: 2026,
+      }));
+    } else {
+      // Merge with existing list: update matching vessel names or append
+      const existing = [...vessels];
+      extractedCandidateVessels.forEach((cand, idx) => {
+        const cleanName = (cand.vesselName || '').toUpperCase().trim();
+        const foundIndex = existing.findIndex(
+          v => v.vesselName.toUpperCase().trim() === cleanName || 
+          (cand.voyageNumber && v.voyageNumber === cand.voyageNumber)
+        );
+
+        if (foundIndex >= 0) {
+          // Update existing vessel's dates and status
+          existing[foundIndex] = {
+            ...existing[foundIndex],
+            eta: cand.eta || existing[foundIndex].eta,
+            etb: cand.etb || existing[foundIndex].etb,
+            etd: cand.etd || existing[foundIndex].etd,
+            status: cand.status || existing[foundIndex].status,
+            scVolumeTons: cand.scVolumeTons !== undefined ? cand.scVolumeTons : existing[foundIndex].scVolumeTons,
+            sqVolumeTons: cand.sqVolumeTons !== undefined ? cand.sqVolumeTons : existing[foundIndex].sqVolumeTons,
+            totalVolumeTons: cand.totalVolumeTons || existing[foundIndex].totalVolumeTons,
+          };
+        } else {
+          // Add new
+          existing.push({
+            id: cand.id || `vessel-extracted-${Date.now()}-${idx}`,
+            visitCode: cand.voyageNumber || `SLN20260${idx + 40}`,
+            voyageNumber: cand.voyageNumber || `SLN20260${idx + 40}`,
+            vesselName: cleanName || 'NAVIO',
+            loaMeters: cand.loaMeters || 180,
+            loa: cand.loaMeters || 180,
+            beam: cand.beam || 30,
+            draughtArrival: cand.draughtArrival || 6.5,
+            flag: cand.flag || 'Panamá',
+            dwt: cand.dwt || 40000,
+            eta: cand.eta || '15/09/2026 12:00',
+            etb: cand.etb || '15/09/2026 20:00',
+            etd: cand.etd || '18/09/2026 16:00',
+            status: cand.status || 'Previsto',
+            scVolumeTons: cand.scVolumeTons || 35000,
+            sqVolumeTons: cand.sqVolumeTons || 0,
+            totalVolumeTons: (cand.scVolumeTons || 35000) + (cand.sqVolumeTons || 0),
+            trafficType: cand.trafficType || 'CBT',
+            trafficLabel: cand.trafficLabel || 'Cabotagem',
+            shipper: cand.shipper || 'SALINOR',
+            destination: cand.destination || 'Cabotagem',
+            productType: cand.productType || 'Sal Comum',
+            notes: cand.notes || 'Extraído automaticamente via PDF Line-Up',
+            month: cand.month || 9,
+            monthName: cand.monthName || 'Setembro',
+            year: 2026,
+          });
+        }
+      });
+      updatedList = existing;
+    }
+
+    setVessels(updatedList);
+    saveManagedVesselsWithRemote(updatedList, pdfInfo, { user: 'controle', pass: 'casa8877$' }, pdfDateInput);
+    setShowExtractionReviewModal(false);
+    setActiveTab('vessels');
+    setStatusMessage({
+      type: 'success',
+      text: 'Escala de navios atualizada com sucesso a partir do PDF! Você pode continuar editando qualquer campo manualmente.'
+    });
+  };
+
   // Handle PDF file upload
   const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -248,6 +407,9 @@ export function AdminPanelModal({ isOpen, onClose, onLogout }: AdminPanelModalPr
       saveUploadedPDF(info);
       saveManagedVesselsWithRemote(vessels, info, { user: 'controle', pass: 'casa8877$' }, effectiveDate);
       setStatusMessage({ type: 'success', text: `Line-Up em PDF "${file.name}" publicado com sucesso! Data oficial: ${effectiveDate}` });
+
+      // Automatically trigger smart text extraction on upload!
+      triggerExtractFromPdf(dataUrl);
     };
     reader.readAsDataURL(file);
   };
@@ -412,6 +574,19 @@ export function AdminPanelModal({ isOpen, onClose, onLogout }: AdminPanelModalPr
 
           {activeTab === 'vessels' && (
             <div className="flex items-center gap-2">
+              {pdfInfo && (
+                <button
+                  type="button"
+                  onClick={() => triggerExtractFromPdf()}
+                  disabled={isExtractingPdf}
+                  className="px-3 py-1.5 rounded-lg bg-cyan-950/80 border border-cyan-500/50 hover:bg-cyan-900/60 text-cyan-300 text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer disabled:opacity-50"
+                  title="Identificar e preencher novos horários a partir do PDF salvo"
+                >
+                  <Bot className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>{isExtractingPdf ? 'Lendo PDF...' : 'Extrair do PDF'}</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => setIsAddingNew(true)}
@@ -878,12 +1053,235 @@ export function AdminPanelModal({ isOpen, onClose, onLogout }: AdminPanelModalPr
                     <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                     <span>Este PDF está ativo e um botão de download foi ativado no painel principal para os usuários.</span>
                   </div>
+
+                  {/* Smart Extraction CTA inside PDF tab */}
+                  <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-xs text-slate-300 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-cyan-400" />
+                      <span>Deseja ler novamente ou atualizar a escala através deste PDF?</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => triggerExtractFromPdf()}
+                      disabled={isExtractingPdf}
+                      className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 text-xs font-bold flex items-center gap-2 transition shadow-md shadow-cyan-500/20 cursor-pointer disabled:opacity-50"
+                    >
+                      {isExtractingPdf ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Lendo PDF...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="w-3.5 h-3.5" />
+                          <span>Ler Horários do PDF Automaticamente</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-center text-xs text-slate-500">
                   Nenhum arquivo PDF enviado no momento. A escala utiliza as tabelas interativas padrão.
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Automatic PDF Extraction Review & Manual Approval */}
+        {showExtractionReviewModal && (
+          <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="w-full max-w-4xl max-h-[90vh] bg-slate-900 border border-cyan-500/60 rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+              {/* Review Header */}
+              <div className="px-6 py-4 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      Revisão da Extração Inteligente do PDF
+                      <span className="text-xs font-normal text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded-full border border-cyan-800/80">
+                        {extractedCandidateVessels.length} navios identificados
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Você pode ajustar manualmente qualquer dado nesta tabela antes de aplicar à escala oficial.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowExtractionReviewModal(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Review Table / Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="overflow-x-auto rounded-xl border border-slate-800">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-slate-950/90 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-b border-slate-800">
+                        <th className="p-3">Navio / Viagem</th>
+                        <th className="p-3">ETA (Chegada)</th>
+                        <th className="p-3">ETB (Atracação)</th>
+                        <th className="p-3">ETD (Saída)</th>
+                        <th className="p-3">Status</th>
+                        <th className="p-3">Volume (Tons)</th>
+                        <th className="p-3 text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+                      {extractedCandidateVessels.map((cand, idx) => (
+                        <tr key={idx} className="hover:bg-slate-800/30 transition">
+                          <td className="p-3">
+                            <input
+                              type="text"
+                              value={cand.vesselName || ''}
+                              onChange={(e) => {
+                                const copy = [...extractedCandidateVessels];
+                                copy[idx].vesselName = e.target.value.toUpperCase();
+                                setExtractedCandidateVessels(copy);
+                              }}
+                              className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white font-bold text-xs"
+                            />
+                            <span className="text-[10px] text-cyan-400 font-mono block mt-0.5">
+                              {cand.voyageNumber || `SLN20260${idx + 40}`}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <input
+                              type="text"
+                              value={cand.eta || ''}
+                              onChange={(e) => {
+                                const copy = [...extractedCandidateVessels];
+                                copy[idx].eta = e.target.value;
+                                setExtractedCandidateVessels(copy);
+                              }}
+                              className="w-32 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-cyan-300 font-mono text-xs"
+                            />
+                          </td>
+                          <td className="p-3">
+                            <input
+                              type="text"
+                              value={cand.etb || ''}
+                              onChange={(e) => {
+                                const copy = [...extractedCandidateVessels];
+                                copy[idx].etb = e.target.value;
+                                setExtractedCandidateVessels(copy);
+                              }}
+                              className="w-32 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300 font-mono text-xs"
+                            />
+                          </td>
+                          <td className="p-3">
+                            <input
+                              type="text"
+                              value={cand.etd || ''}
+                              onChange={(e) => {
+                                const copy = [...extractedCandidateVessels];
+                                copy[idx].etd = e.target.value;
+                                setExtractedCandidateVessels(copy);
+                              }}
+                              className="w-32 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-300 font-mono text-xs"
+                            />
+                          </td>
+                          <td className="p-3">
+                            <select
+                              value={cand.status || 'Previsto'}
+                              onChange={(e) => {
+                                const copy = [...extractedCandidateVessels];
+                                copy[idx].status = e.target.value as any;
+                                setExtractedCandidateVessels(copy);
+                              }}
+                              className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white text-xs"
+                            >
+                              <option value="Previsto">Previsto</option>
+                              <option value="Em operação">Em operação</option>
+                              <option value="Concluído">Concluído</option>
+                            </select>
+                          </td>
+                          <td className="p-3">
+                            <input
+                              type="number"
+                              value={cand.scVolumeTons || 35000}
+                              onChange={(e) => {
+                                const copy = [...extractedCandidateVessels];
+                                copy[idx].scVolumeTons = Number(e.target.value) || 0;
+                                copy[idx].totalVolumeTons = (copy[idx].scVolumeTons || 0) + (copy[idx].sqVolumeTons || 0);
+                                setExtractedCandidateVessels(copy);
+                              }}
+                              className="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-white font-mono text-xs"
+                            />
+                          </td>
+                          <td className="p-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const copy = extractedCandidateVessels.filter((_, i) => i !== idx);
+                                setExtractedCandidateVessels(copy);
+                              }}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-950/40"
+                              title="Remover este navio da importação"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1">
+                  <span className="font-bold text-slate-300 block flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    Como você deseja salvar as alterações?
+                  </span>
+                  <p>
+                    <strong>Mesclar com existentes:</strong> Atualiza os horários dos navios já cadastrados e adiciona os novos, preservando o histórico anterior.
+                  </p>
+                  <p>
+                    <strong>Substituir escala atual:</strong> Define esta lista como a nova escala ativa oficial do terminal.
+                  </p>
+                </div>
+              </div>
+
+              {/* Review Footer */}
+              <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/90 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowExtractionReviewModal(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700"
+                >
+                  Descartar / Cancelar
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleApplyExtractedVessels('merge')}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Mesclar e Atualizar Horários</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleApplyExtractedVessels('replace')}
+                    className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-cyan-600/20 cursor-pointer"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Substituir Toda a Escala</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
