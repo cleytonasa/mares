@@ -4,8 +4,13 @@
 export interface SaltVesselRecord {
   id: string;
   visitCode: string;
+  voyageNumber?: string;
   vesselName: string;
   loaMeters: number;
+  loa?: number;
+  beam?: number;
+  draughtArrival?: number;
+  flag?: string;
   dwt: number;
   eta: string;
   etb: string;
@@ -16,11 +21,16 @@ export interface SaltVesselRecord {
   totalVolumeTons: number;
   trafficType: 'EXP' | 'CBT'; // Exportação vs Cabotagem
   trafficLabel: string;
-  shipper: 'SALINOR' | 'SDB' | 'SEA SALT';
-  month: number; // 1 to 8
+  shipper: 'SALINOR' | 'SDB' | 'SEA SALT' | string;
+  destination?: string;
+  notes?: string;
+  productType?: string;
+  month: number; // 1 to 12
   monthName: string;
   year: number;
 }
+
+export type SaltShipmentVessel = SaltVesselRecord;
 
 export interface MonthlySaltSummary {
   month: number;
@@ -34,6 +44,8 @@ export interface MonthlySaltSummary {
   concludedTotalVolume: number;
   concludedScTotal: number;
   concludedSqTotal: number;
+  operatingTotalVolume?: number;
+  plannedTotalVolume?: number;
   scTotal: number;
   sqTotal: number;
   totalVolume: number;

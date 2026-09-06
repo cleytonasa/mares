@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Anchor,
   ArrowDownUp,
@@ -10,8 +10,10 @@ import {
   Clock,
   Compass,
   Copy,
+  Download,
   Factory,
   FileSpreadsheet,
+  FileText,
   Globe2,
   Navigation,
   PieChart,
@@ -29,6 +31,14 @@ import {
   LINEUP_LAST_UPDATED,
   SaltVesselRecord,
 } from '../data/saltShipmentsData';
+import {
+  getManagedVessels,
+  getLineupLastUpdated,
+  getUploadedPDF,
+  calculateMonthlySummaries,
+  LINEUP_UPDATED_EVENT,
+  UploadedPDFInfo,
+} from '../services/adminLineupService';
 
 interface SaltShipmentsDashboardProps {
   onSelectVesselOnMap?: (vesselName: string) => void;
@@ -47,17 +57,34 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
   const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
   const [timelineMonth, setTimelineMonth] = useState<number>(9); // Default to September 2026 (current active line-up month)
 
+  // Live managed vessels from local/remote storage and uploaded PDF
+  const [vessels, setVessels] = useState<SaltVesselRecord[]>(getManagedVessels);
+  const [uploadedPdf, setUploadedPdf] = useState<UploadedPDFInfo | null>(getUploadedPDF);
+  const [lineupLastUpdated, setLineupLastUpdated] = useState<string>(getLineupLastUpdated);
+
+  useEffect(() => {
+    const handleLineupUpdate = () => {
+      setVessels(getManagedVessels());
+      setUploadedPdf(getUploadedPDF());
+      setLineupLastUpdated(getLineupLastUpdated());
+    };
+    window.addEventListener(LINEUP_UPDATED_EVENT, handleLineupUpdate);
+    return () => window.removeEventListener(LINEUP_UPDATED_EVENT, handleLineupUpdate);
+  }, []);
+
+  const monthlySummaries = useMemo(() => calculateMonthlySummaries(vessels), [vessels]);
+
   // Active Operating Vessel & Next Planned Vessel
-  const activeOperatingVessel = useMemo(() => SALT_SHIPMENTS_2026.find((v) => v.status === 'Em operação'), []);
-  const nextPlannedVessel = useMemo(() => !activeOperatingVessel ? SALT_SHIPMENTS_2026.find((v) => v.status === 'Previsto') : undefined, [activeOperatingVessel]);
+  const activeOperatingVessel = useMemo(() => vessels.find((v) => v.status === 'Em operação'), [vessels]);
+  const nextPlannedVessel = useMemo(() => !activeOperatingVessel ? vessels.find((v) => v.status === 'Previsto') : undefined, [activeOperatingVessel, vessels]);
 
   // Timeline month details & vessels separated by Operating (first), Planned (second), and Concluded (below)
   const timelineMonthInfo = useMemo(() => {
-    return MONTHLY_SALT_SUMMARIES.find((m) => m.month === timelineMonth) || MONTHLY_SALT_SUMMARIES[7];
-  }, [timelineMonth]);
+    return monthlySummaries.find((m) => m.month === timelineMonth) || monthlySummaries[7] || MONTHLY_SALT_SUMMARIES[7];
+  }, [timelineMonth, monthlySummaries]);
 
   const timelineVessels = useMemo(() => {
-    const list = SALT_SHIPMENTS_2026.filter((v) => v.month === timelineMonth);
+    const list = vessels.filter((v) => v.month === timelineMonth);
     const operating = list.filter((v) => v.status === 'Em operação');
     const planned = list.filter((v) => v.status === 'Previsto');
     const concluded = list.filter((v) => v.status === 'Concluído');
@@ -68,11 +95,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
       all: [...operating, ...planned, ...concluded],
       totalCount: list.length,
     };
-  }, [timelineMonth]);
+  }, [timelineMonth, vessels]);
 
   // Filtered vessels calculation
   const filteredVessels = useMemo(() => {
-    return SALT_SHIPMENTS_2026.filter((v) => {
+    return vessels.filter((v) => {
       if (selectedMonth !== 'ALL' && v.month !== selectedMonth) return false;
       if (selectedShipper !== 'ALL' && v.shipper !== selectedShipper) return false;
       if (selectedTraffic !== 'ALL' && v.trafficType !== selectedTraffic) return false;
@@ -173,7 +200,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
     
     let text = `⚓ *INTERSAL - RELATÓRIO DE EMBARQUE DE SAL (TERMISA)*\n`;
     text += `📅 *Período:* ${monthLabel}\n`;
-    text += `🕒 *Atualizado em:* ${LINEUP_LAST_UPDATED}\n\n`;
+    text += `🕒 *Atualizado em (Data do PDF):* ${lineupLastUpdated}\n\n`;
     text += `✅ *TOTAL EMBARCADO (SOMENTE NAVIOS CONCLUÍDOS):* ${filteredTotals.concludedVolume.toLocaleString('pt-BR')} t\n`;
     text += `🚢 *Navios Concluídos:* ${filteredTotals.concludedCount} navios\n`;
     text += `  • Sal Comum (SC): ${filteredTotals.concludedScTotal.toLocaleString('pt-BR')} t (${((filteredTotals.concludedScTotal / (filteredTotals.concludedVolume || 1)) * 100).toFixed(1)}%)\n`;
@@ -202,7 +229,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
     setTimeout(() => setCopiedNotification(false), 3000);
   };
 
-  const maxMonthlyVolume = Math.max(...MONTHLY_SALT_SUMMARIES.map((m) => m.totalVolume));
+  const maxMonthlyVolume = Math.max(...monthlySummaries.map((m) => m.totalVolume), 1);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -225,8 +252,23 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-slate-950/90 text-cyan-300 border border-cyan-500/40 text-[10px] font-mono font-medium flex items-center gap-1">
                   <Clock className="w-2.5 h-2.5 text-cyan-400" />
-                  Atualizado: {LINEUP_LAST_UPDATED}
+                  Atualizado: {lineupLastUpdated}
                 </span>
+
+                {uploadedPdf && (
+                  <a
+                    href={uploadedPdf.dataUrl}
+                    download={uploadedPdf.fileName}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-2.5 py-0.5 rounded-full bg-rose-950/90 hover:bg-rose-900 text-rose-200 border border-rose-600/60 text-[10px] font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+                    title={`Baixar Line-Up Oficial em PDF (${(uploadedPdf.fileSize / 1024).toFixed(1)} KB - Enviado em ${uploadedPdf.uploadedAt})`}
+                  >
+                    <FileText className="w-3 h-3 text-rose-400" />
+                    <span>Line-Up Oficial PDF</span>
+                    <Download className="w-2.5 h-2.5 text-rose-300" />
+                  </a>
+                )}
               </div>
               <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight mt-1 flex items-center gap-2">
                 Painel de Embarque (Line-Up)
@@ -874,9 +916,9 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
             <div className="space-y-3 pt-2">
               <div 
                 className="grid gap-1.5 sm:gap-3 h-48 sm:h-56 items-end"
-                style={{ gridTemplateColumns: `repeat(${MONTHLY_SALT_SUMMARIES.length}, minmax(0, 1fr))` }}
+                style={{ gridTemplateColumns: `repeat(${monthlySummaries.length}, minmax(0, 1fr))` }}
               >
-                {MONTHLY_SALT_SUMMARIES.map((m) => {
+                {monthlySummaries.map((m) => {
                   const isMonthEmpty = (m.concludedTotalVolume === 0 && (m.concludedCount === 0 || m.concludedCount === undefined));
                   const total = isMonthEmpty ? 0 : m.concludedTotalVolume;
                   const heightPct = total > 0 ? Math.round((total / maxMonthlyVolume) * 100) : 0;
@@ -1032,8 +1074,8 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
 
                   {/* Calculate SVG Coordinates for all months dynamically */}
                   {(() => {
-                    const numMonths = MONTHLY_SALT_SUMMARIES.length;
-                    const coords = MONTHLY_SALT_SUMMARIES.map((m, idx) => {
+                    const numMonths = monthlySummaries.length;
+                    const coords = monthlySummaries.map((m, idx) => {
                       const x = 55 + (idx / Math.max(numMonths - 1, 1)) * 620;
                       const isMonthEmpty = (m.concludedTotalVolume === 0 && (m.concludedCount === 0 || m.concludedCount === undefined));
                       const volume = isMonthEmpty ? 0 : m.concludedTotalVolume;
@@ -1295,9 +1337,9 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                   : 'bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800'
               }`}
             >
-              Todos ({MONTHLY_SALT_SUMMARIES.length} meses)
+              Todos ({monthlySummaries.length} meses)
             </button>
-            {MONTHLY_SALT_SUMMARIES.map((m) => (
+            {monthlySummaries.map((m) => (
               <button
                 key={m.month}
                 onClick={() => setSelectedMonth(m.month)}
@@ -1320,10 +1362,10 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
               onChange={(e) => setSelectedStatus(e.target.value as any)}
               className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 cursor-pointer"
             >
-              <option value="ALL">Status: Todos ({SALT_SHIPMENTS_2026.length})</option>
-              <option value="Concluído">Status: Concluídos ({SALT_SHIPMENTS_2026.filter(v => v.status === 'Concluído').length})</option>
-              <option value="Em operação">Status: Em operação ({SALT_SHIPMENTS_2026.filter(v => v.status === 'Em operação').length})</option>
-              <option value="Previsto">Status: Previstos ({SALT_SHIPMENTS_2026.filter(v => v.status === 'Previsto').length})</option>
+              <option value="ALL">Status: Todos ({vessels.length})</option>
+              <option value="Concluído">Status: Concluídos ({vessels.filter(v => v.status === 'Concluído').length})</option>
+              <option value="Em operação">Status: Em operação ({vessels.filter(v => v.status === 'Em operação').length})</option>
+              <option value="Previsto">Status: Previstos ({vessels.filter(v => v.status === 'Previsto').length})</option>
             </select>
 
             {/* Shipper Filter */}
