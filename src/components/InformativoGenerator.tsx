@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Copy, Check, Waves, Wind, Ship, CheckCircle2 } from 'lucide-react';
+import { FileText, Copy, Check, Waves, Wind, Ship, CheckCircle2, Clock } from 'lucide-react';
 import { PortConfig, WeatherData } from '../types/maritime';
 import { getTidesForDay } from '../data/tideData2026';
 import { calculateCurrentTide, get24hTideCurve } from '../utils/tideCalculations';
@@ -37,11 +37,15 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
 
   const monthName = selectedDate.toLocaleDateString('pt-BR', { month: 'long' });
 
-  // Navios finalizados no mês selecionado
+  // Navios finalizados e previstos no mês selecionado
   const concludedVesselsInMonth = SALT_SHIPMENTS_2026.filter(
     (v) => v.month === month && v.status === 'Concluído'
   );
+  const plannedVesselsInMonth = SALT_SHIPMENTS_2026.filter(
+    (v) => v.month === month && (v.status === 'Previsto' || v.status === 'Em operação')
+  );
   const monthTotalTons = concludedVesselsInMonth.reduce((acc, v) => acc + v.totalVolumeTons, 0);
+  const plannedMonthTotalTons = plannedVesselsInMonth.reduce((acc, v) => acc + v.totalVolumeTons, 0);
 
   const getMoonText = () => {
     switch (dayTides.moonPhase) {
@@ -89,9 +93,23 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
           : v.sqVolumeTons > 0
           ? ` [SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
           : ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')}]`;
-        msg += `• *${v.vesselName}* (${v.visitCode} • ${v.dwt.toLocaleString('pt-BR')} DWT) • ${v.totalVolumeTons.toLocaleString('pt-BR')}${typeBreakdown} (${v.shipper} - ${v.trafficLabel})\n`;
+        msg += `• *${v.vesselName}* (${v.visitCode} • ${v.dwt.toLocaleString('pt-BR')} DWT) • ${v.totalVolumeTons.toLocaleString('pt-BR')} t${typeBreakdown} (${v.shipper} - ${v.trafficLabel})\n`;
       });
-      msg += `*Total Carregado:* ${monthTotalTons.toLocaleString('pt-BR')} (${concludedVesselsInMonth.length} navios)\n`;
+      msg += `*Total Carregado:* ${monthTotalTons.toLocaleString('pt-BR')} t (${concludedVesselsInMonth.length} navios)\n`;
+    }
+
+    if (plannedVesselsInMonth.length > 0) {
+      msg += `\n📋 *LINE-UP PROGRAMADO / PREVISTO (${monthName.toUpperCase()}/${year}):*\n`;
+      plannedVesselsInMonth.forEach((v) => {
+        const typeBreakdown = v.scVolumeTons > 0 && v.sqVolumeTons > 0
+          ? ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')} | SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
+          : v.sqVolumeTons > 0
+          ? ` [SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')}]`
+          : ` [SC: ${v.scVolumeTons.toLocaleString('pt-BR')}]`;
+        const dateInfo = v.status === 'Em operação' ? `Em operação • ETD: ${v.etd}` : `ETA: ${v.eta.split(' ')[0]}`;
+        msg += `• *${v.vesselName}* (${v.visitCode}) • ${v.totalVolumeTons.toLocaleString('pt-BR')} t${typeBreakdown} (${v.shipper} - ${v.trafficLabel}) • ${dateInfo}\n`;
+      });
+      msg += `*Total Programado:* ${plannedMonthTotalTons.toLocaleString('pt-BR')} t (${plannedVesselsInMonth.length} navios)\n`;
     }
 
     msg += `\n⚓ *CONDIÇÃO DA BARRA & RECOMENDAÇÕES:*\n`;
@@ -361,8 +379,84 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
               </table>
             </div>
           ) : (
-            <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-center text-xs font-mono text-slate-400">
-              Nenhum navio finalizado registrado para este mês.
+            <div className="p-3 rounded-xl bg-slate-900/40 border border-slate-800 text-center text-xs font-mono text-slate-400">
+              Nenhum navio finalizado registrado até o momento para este mês.
+            </div>
+          )}
+
+          {/* Planned / Scheduled Vessels */}
+          {plannedVesselsInMonth.length > 0 && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5 font-mono">
+                  <Clock className="w-4 h-4 text-cyan-400" />
+                  Line-Up Programado / Previsto ({monthName.toUpperCase()} / {year})
+                </h4>
+                <span className="text-[11px] font-mono text-cyan-300 font-bold bg-cyan-950/60 border border-cyan-800/50 px-2.5 py-0.5 rounded-md">
+                  {plannedVesselsInMonth.length} navio(s) • {plannedMonthTotalTons.toLocaleString('pt-BR')} t
+                </span>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-800">
+                <table className="w-full text-xs font-mono text-left">
+                  <thead className="bg-slate-900 text-slate-400 border-b border-slate-800 text-[11px]">
+                    <tr>
+                      <th className="p-2.5">Navio / Visita</th>
+                      <th className="p-2.5">Previsão (ETA / ETB / ETD)</th>
+                      <th className="p-2.5">Volume</th>
+                      <th className="p-2.5">Embarcador / Tráfego</th>
+                      <th className="p-2.5 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
+                    {plannedVesselsInMonth.map((vessel) => (
+                      <tr key={vessel.id} className="hover:bg-slate-900/40">
+                        <td className="p-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-white">{vessel.vesselName}</span>
+                            {vessel.vesselName === 'TBN' && (
+                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
+                                A nomear
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 block">
+                            {vessel.visitCode} • {vessel.dwt > 0 ? `${vessel.dwt.toLocaleString('pt-BR')} DWT` : 'DWT a definir'}
+                          </span>
+                        </td>
+                        <td className="p-2.5 text-slate-300">
+                          <span className="block text-[11px] text-cyan-300">ETA: {vessel.eta}</span>
+                          <span className="text-[10px] text-slate-400 block">ETB: {vessel.etb}</span>
+                        </td>
+                        <td className="p-2.5">
+                          <span className="font-bold text-cyan-300 block">{vessel.totalVolumeTons.toLocaleString('pt-BR')} t</span>
+                          <span className="text-[10px] text-slate-400">
+                            {vessel.scVolumeTons > 0 && vessel.sqVolumeTons > 0
+                              ? `SC: ${vessel.scVolumeTons.toLocaleString('pt-BR')} | SQ: ${vessel.sqVolumeTons.toLocaleString('pt-BR')}`
+                              : vessel.sqVolumeTons > 0
+                              ? `SQ: ${vessel.sqVolumeTons.toLocaleString('pt-BR')}`
+                              : `SC: ${vessel.scVolumeTons.toLocaleString('pt-BR')}`}
+                          </span>
+                        </td>
+                        <td className="p-2.5">
+                          <span className="text-cyan-300 font-semibold">{vessel.shipper}</span>
+                          <span className="text-slate-400 text-[10px] block">{vessel.trafficLabel}</span>
+                        </td>
+                        <td className="p-2.5 text-right">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                            vessel.status === 'Em operação'
+                              ? 'bg-amber-950/80 text-amber-300 border border-amber-700/60'
+                              : 'bg-sky-950/80 text-sky-300 border border-sky-700/60'
+                          }`}>
+                            <Clock className="w-3 h-3 text-cyan-400" />
+                            {vessel.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

@@ -1,5 +1,6 @@
 // Oficial Line-Up & Histórico de Embarque de Sal a Granel - INTERSAL (TERMISA)
-// Período: Janeiro a Agosto de 2026
+// Período: Janeiro a Setembro de 2026
+// Atualizado em: 01/09/2026 10:48
 
 export interface SaltVesselRecord {
   id: string;
@@ -17,7 +18,7 @@ export interface SaltVesselRecord {
   trafficType: 'EXP' | 'CBT'; // Exportação vs Cabotagem
   trafficLabel: string;
   shipper: 'SALINOR' | 'SDB' | 'SEA SALT';
-  month: number; // 1 to 8
+  month: number; // 1 to 12
   monthName: string;
   year: number;
 }
@@ -769,7 +770,7 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
   {
     id: 'sdb2026004',
     visitCode: 'SDB2026004',
-    vesselName: 'TBN (A ser nomeado)',
+    vesselName: 'TBN',
     loaMeters: 0,
     dwt: 0,
     eta: '18/09/2026 00:01',
@@ -789,7 +790,7 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
   {
     id: 'sln2026032',
     visitCode: 'SLN2026032',
-    vesselName: 'TBN (A ser nomeado)',
+    vesselName: 'TBN',
     loaMeters: 0,
     dwt: 0,
     eta: '23/09/2026 00:01',
@@ -809,7 +810,7 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
   {
     id: 'sln2026033',
     visitCode: 'SLN2026033',
-    vesselName: 'TBN (A ser nomeado)',
+    vesselName: 'TBN',
     loaMeters: 0,
     dwt: 0,
     eta: '25/09/2026 00:01',
