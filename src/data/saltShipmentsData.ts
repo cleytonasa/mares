@@ -753,9 +753,9 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     vesselName: 'REVENGER',
     loaMeters: 180.0,
     dwt: 35070,
-    eta: '03/09/2026 00:01',
-    etb: '03/09/2026 09:00',
-    etd: '06/09/2026 12:00',
+    eta: '03/09/2026 12:40',
+    etb: '03/09/2026 16:50',
+    etd: '07/09/2026 15:00',
     status: 'Em operação',
     scVolumeTons: 20350,
     sqVolumeTons: 14350,
@@ -1048,7 +1048,7 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
   },
 ];
 
-export const LINEUP_LAST_UPDATED = '06/09/2026 07:10';
+export const LINEUP_LAST_UPDATED = '06/09/2026 08:28';
 
 export const OVERALL_TOTALS = {
   // Total Embarcado Concluído (Janeiro a Agosto 2026)
