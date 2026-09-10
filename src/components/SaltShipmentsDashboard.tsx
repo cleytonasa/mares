@@ -441,9 +441,9 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                         <span className="text-xs sm:text-sm font-bold text-white font-mono block">
                           {v.totalVolumeTons.toLocaleString('pt-BR')} t
                         </span>
-                        <span className="text-[9px] text-slate-400 block">
+                        <span className="text-[9px] text-slate-400 block font-mono">
                           {v.sqVolumeTons > 0 && v.scVolumeTons > 0
-                            ? `SC: ${(v.scVolumeTons / 1000).toFixed(0)}k | SQ: ${(v.sqVolumeTons / 1000).toFixed(0)}k`
+                            ? `SC: ${v.scVolumeTons.toLocaleString('pt-BR')} t | SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')} t`
                             : v.sqVolumeTons > 0
                             ? 'Sal Químico (SQ)'
                             : 'Sal Comum (SC)'}
@@ -525,9 +525,9 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                         <span className="text-xs sm:text-sm font-bold text-white font-mono block">
                           {v.totalVolumeTons.toLocaleString('pt-BR')} t
                         </span>
-                        <span className="text-[9px] text-slate-400 block">
+                        <span className="text-[9px] text-slate-400 block font-mono">
                           {v.sqVolumeTons > 0 && v.scVolumeTons > 0
-                            ? `SC: ${(v.scVolumeTons / 1000).toFixed(0)}k | SQ: ${(v.sqVolumeTons / 1000).toFixed(0)}k`
+                            ? `SC: ${v.scVolumeTons.toLocaleString('pt-BR')} t | SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')} t`
                             : v.sqVolumeTons > 0
                             ? 'Sal Químico (SQ)'
                             : 'Sal Comum (SC)'}
@@ -609,9 +609,9 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                         <span className="text-xs sm:text-sm font-bold text-white font-mono block">
                           {v.totalVolumeTons.toLocaleString('pt-BR')} t
                         </span>
-                        <span className="text-[9px] text-slate-400 block">
+                        <span className="text-[9px] text-slate-400 block font-mono">
                           {v.sqVolumeTons > 0 && v.scVolumeTons > 0
-                            ? `SC: ${(v.scVolumeTons / 1000).toFixed(0)}k | SQ: ${(v.sqVolumeTons / 1000).toFixed(0)}k`
+                            ? `SC: ${v.scVolumeTons.toLocaleString('pt-BR')} t | SQ: ${v.sqVolumeTons.toLocaleString('pt-BR')} t`
                             : v.sqVolumeTons > 0
                             ? 'Sal Químico (SQ)'
                             : 'Sal Comum (SC)'}
@@ -1063,11 +1063,12 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                     >
                       {/* Value Badge on top */}
                       <div
-                        className={`text-[9px] sm:text-[11px] font-bold mb-1 transition text-center whitespace-nowrap ${
-                          isConcluded ? 'text-slate-300 group-hover:text-white' : 'text-slate-500'
+                        className={`text-[8.5px] sm:text-[10px] md:text-[11px] font-bold mb-1 transition text-center whitespace-nowrap font-mono tracking-tighter sm:tracking-normal ${
+                          isConcluded ? 'text-slate-200 group-hover:text-cyan-300' : 'text-slate-500'
                         }`}
+                        title={isConcluded ? `${m.monthName}/2026: ${total.toLocaleString('pt-BR')} t` : undefined}
                       >
-                        {isConcluded ? `${(total / 1000).toFixed(0)}k` : '-'}
+                        {isConcluded ? total.toLocaleString('pt-BR') : '-'}
                       </div>
 
                       {/* Stacked Bar Container */}
@@ -1124,7 +1125,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                           {m.shortMonth}
                         </span>
                         <div className="text-[9px] text-slate-500 mt-0.5 hidden sm:block font-mono">
-                          {isConcluded ? `${m.concludedCount} navios` : '0 finalizados'}
+                          {isConcluded ? `${m.concludedCount} ${m.concludedCount === 1 ? 'navio' : 'navios'}` : '0 finalizados'}
                         </div>
                       </div>
                     </div>
@@ -1324,11 +1325,11 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                                 y={c.hasConcluded ? c.yTotal - 8 : 142}
                                 textAnchor="middle"
                                 fill={c.hasConcluded ? (isSelected ? '#38bdf8' : '#e2e8f0') : '#64748b'}
-                                fontSize="9"
+                                fontSize="8"
                                 fontWeight={c.hasConcluded ? 'bold' : 'normal'}
                                 fontFamily="monospace"
                               >
-                                {c.hasConcluded ? `${(c.concludedTotalVolume / 1000).toFixed(0)}k` : '-'}
+                                {c.hasConcluded ? c.concludedTotalVolume.toLocaleString('pt-BR') : '-'}
                               </text>
                             </g>
                           );
@@ -1766,8 +1767,8 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                 <td className="py-3 px-3 sm:px-4 text-right font-mono text-white text-sm font-black">
                   {filteredTotals.concludedVolume.toLocaleString('pt-BR')} t
                 </td>
-                <td colSpan={2} className="py-3 px-3 text-center text-slate-400 text-[11px]">
-                  SALINOR: {(filteredTotals.concludedSalinor / 1000).toFixed(0)}k | SDB: {(filteredTotals.concludedSdb / 1000).toFixed(0)}k
+                <td colSpan={2} className="py-3 px-3 text-center text-slate-400 text-[11px] font-mono">
+                  SALINOR: {filteredTotals.concludedSalinor.toLocaleString('pt-BR')} t | SDB: {filteredTotals.concludedSdb.toLocaleString('pt-BR')} t
                 </td>
               </tr>
             </tfoot>
