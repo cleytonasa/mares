@@ -755,10 +755,10 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
     dwt: 35070,
     eta: '03/09/2026 12:40',
     etb: '03/09/2026 16:50',
-    etd: '07/09/2026 15:00',
-    status: 'Em operação',
-    scVolumeTons: 20350,
-    sqVolumeTons: 14350,
+    etd: '09/09/2026 11:40',
+    status: 'Concluído',
+    scVolumeTons: 19400,
+    sqVolumeTons: 15300,
     totalVolumeTons: 34700,
     trafficType: 'CBT',
     trafficLabel: 'Cabotagem',
@@ -1028,55 +1028,55 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     shortMonth: 'Set',
     year: 2026,
     vesselCount: 4,
-    concludedCount: 0,
-    operatingCount: 1,
+    concludedCount: 1,
+    operatingCount: 0,
     plannedCount: 3,
-    concludedTotalVolume: 0,
-    concludedScTotal: 0,
-    concludedSqTotal: 0,
-    scTotal: 136350,
-    sqTotal: 14350,
+    concludedTotalVolume: 34700,
+    concludedScTotal: 19400,
+    concludedSqTotal: 15300,
+    scTotal: 135400,
+    sqTotal: 15300,
     totalVolume: 150700,
     salinorVolume: 122700,
     sdbVolume: 28000,
-    salinorConcludedVolume: 0,
+    salinorConcludedVolume: 34700,
     sdbConcludedVolume: 0,
     expVolume: 73000,
     cbtVolume: 77700,
     expConcludedVolume: 0,
-    cbtConcludedVolume: 0,
+    cbtConcludedVolume: 34700,
   },
 ];
 
-export const LINEUP_LAST_UPDATED = '06/09/2026 08:28';
+export const LINEUP_LAST_UPDATED = '10/09/2026 09:35';
 
 export const OVERALL_TOTALS = {
-  // Total Embarcado Concluído (Janeiro a Agosto 2026)
-  concludedTotalTons: 1217519, // 1.217.519 toneladas efetivamente embarcadas (100% concluídas)
-  concludedScTotalTons: 831316,
-  concludedSqTotalTons: 386203,
-  concludedVessels: 34,
-  concludedSalinorTons: 1063869,
+  // Total Embarcado Concluído (Janeiro a Setembro 2026)
+  concludedTotalTons: 1252219, // 1.252.219 toneladas efetivamente embarcadas (100% concluídas)
+  concludedScTotalTons: 850716,
+  concludedSqTotalTons: 401503,
+  concludedVessels: 35,
+  concludedSalinorTons: 1098569,
   concludedSdbTons: 153650,
   concludedExpTons: 734886,
-  concludedCbtTons: 482633,
+  concludedCbtTons: 517333,
 
   // Totais Consolidados do Line-up (Concluídos)
-  totalTons: 1217519,
-  scTotalTons: 831316,
-  sqTotalTons: 386203,
-  totalVessels: 34,
-  salinorTotalTons: 1063869,
+  totalTons: 1252219,
+  scTotalTons: 850716,
+  sqTotalTons: 401503,
+  totalVessels: 35,
+  salinorTotalTons: 1098569,
   sdbTotalTons: 153650,
   expTotalTons: 734886,
-  cbtTotalTons: 482633,
-  monthlyAverageTons: 152190, // 1.217.519 / 8 meses
-  vesselAverageTons: 35809, // 1.217.519 / 34 navios
+  cbtTotalTons: 517333,
+  monthlyAverageTons: 139135, // 1.252.219 / 9 meses
+  vesselAverageTons: 35778, // 1.252.219 / 35 navios
 
   // Programação e Operação
-  operatingTotalTons: 34700, // REVENGER em operação
-  operatingVessels: 1,
-  plannedTotalTons: 116000, // 3 navios TBNs previstos
+  operatingTotalTons: 0, // Terminal livre no momento
+  operatingVessels: 0,
+  plannedTotalTons: 116000, // 3 navios TBNs previstos (28k + 45k + 43k)
   plannedVessels: 3,
-  totalProgrammedTons: 1368219, // 1.217.519 (Concluídos) + 34.700 (Em operação) + 116.000 (Previstos)
+  totalProgrammedTons: 1368219, // 1.252.219 (Concluídos) + 0 (Em operação) + 116.000 (Previstos)
 };
