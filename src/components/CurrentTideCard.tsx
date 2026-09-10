@@ -324,16 +324,16 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
             {/* Previous Event */}
             <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
               <span className="text-[10px] uppercase text-slate-400 block">
-                {previousEvent.type === 'high' ? 'Última Preia-mar' : 'Última Baixa-mar'}
+                {previousEvent.type === 'high' ? 'Última Preamar' : 'Última Baixa-mar'}
               </span>
               <span className="text-sm font-bold text-slate-200">{previousEvent.timeStr}</span>
               <span className="block text-[11px] text-cyan-400 font-semibold">{previousEvent.height.toFixed(2)} m</span>
             </div>
 
-            {/* Next High Tide Event (Sempre Próxima Preia-mar) */}
+            {/* Next High Tide Event (Sempre Próxima Preamar) */}
             <div className="bg-cyan-950/40 p-2.5 rounded-lg border border-cyan-800/50">
               <span className="text-[10px] uppercase text-cyan-300 font-semibold block">
-                Próxima Preia-mar
+                Próxima Preamar
               </span>
               <span className="text-sm font-bold text-white">{highEventToDisplay.timeStr}</span>
               <span className="block text-[11px] text-emerald-400 font-bold">{highEventToDisplay.height.toFixed(2)} m</span>
@@ -342,7 +342,7 @@ export const CurrentTideCard: React.FC<CurrentTideCardProps> = ({
 
           {/* Countdown pill */}
           <div className="mt-3 text-center text-xs font-mono py-1 rounded-md bg-slate-900 text-slate-300 border border-slate-800">
-            Faltam <span className="text-cyan-400 font-bold">{hoursToNextHigh}h {minsToNextHigh}m</span> para a Preia-mar
+            Faltam <span className="text-cyan-400 font-bold">{hoursToNextHigh}h {minsToNextHigh}m</span> para a Preamar
           </div>
         </div>
 

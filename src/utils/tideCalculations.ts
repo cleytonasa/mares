@@ -115,7 +115,7 @@ export function calculateCurrentTide(targetDate: Date, port: PortConfig): Curren
 
   if (Math.abs(currentRateCmH) < 8) {
     trend = 'ESTOFO';
-    trendDescription = prev.height > next.height ? 'Estofo de Baixa-mar (Inversão)' : 'Estofo de Preia-mar (Inversão)';
+    trendDescription = prev.height > next.height ? 'Estofo de Baixa-mar (Inversão)' : 'Estofo de Preamar (Inversão)';
   } else if (next.height > prev.height) {
     trend = 'ENCHENDO';
     trendDescription = 'Maré Enchendo (Fluxo / Enchente)';
@@ -135,7 +135,7 @@ export function calculateCurrentTide(targetDate: Date, port: PortConfig): Curren
   const minutesToNextEvent = Math.max(0, Math.round((next.timestamp - nowTs) / (1000 * 60)));
   const currentWaterDepth = Number((port.criticalShallowDepth + currentHeight).toFixed(2));
 
-  // Find the next high tide (Preia-mar) event specifically
+  // Find the next high tide (Preamar) event specifically
   let nextHighEvent = events.find((evt) => evt.type === 'high' && evt.timestamp > nowTs);
   if (!nextHighEvent) {
     nextHighEvent = next.type === 'high' ? next : prev;

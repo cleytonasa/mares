@@ -403,9 +403,6 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                   <Ship className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                   Navios Em Operação no Porto
                 </span>
-                <span className="text-[10px] text-amber-300/80 font-mono">
-                  {timelineVessels.operating.length} {timelineVessels.operating.length === 1 ? 'navio' : 'navios'}
-                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -490,9 +487,6 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                   <Clock className="w-3.5 h-3.5 text-sky-400" />
                   Navios Previstos & Programação
                 </span>
-                <span className="text-[10px] text-sky-300/80 font-mono">
-                  {timelineVessels.planned.length} {timelineVessels.planned.length === 1 ? 'navio' : 'navios'}
-                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -576,9 +570,6 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                 <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Navios Concluídos & Operados
-                </span>
-                <span className="text-[10px] text-emerald-300/80 font-mono">
-                  {timelineVessels.concluded.length} {timelineVessels.concluded.length === 1 ? 'navio' : 'navios'}
                 </span>
               </div>
 

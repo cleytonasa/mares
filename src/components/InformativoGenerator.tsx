@@ -70,9 +70,9 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
     msg += `🧭 *Posição:* ${port.coordinates.dmsLat} ${port.coordinates.dmsLng}\n`;
     msg += `🌙 *Fase da Lua:* ${getMoonText()}\n\n`;
 
-    msg += `📊 *PREVISÃO DE MARÉS (PREIA-MAR / BAIXA-MAR):*\n`;
+    msg += `📊 *PREVISÃO DE MARÉS (PREAMAR / BAIXA-MAR):*\n`;
     dayTides.events.forEach((evt) => {
-      const typeLabel = evt.type === 'high' ? '🔼 PREIA-MAR' : '🔽 BAIXA-MAR';
+      const typeLabel = evt.type === 'high' ? '🔼 PREAMAR' : '🔽 BAIXA-MAR';
       const h = (evt.height * port.heightMultiplier).toFixed(2);
       msg += `• *${evt.time}* - ${typeLabel}: *${h} m*\n`;
     });
@@ -228,7 +228,7 @@ export const InformativoGenerator: React.FC<InformativoGeneratorProps> = ({
                       evt.type === 'high' ? 'text-cyan-300' : 'text-slate-400'
                     }`}
                   >
-                    {evt.type === 'high' ? '▲ PREIA-MAR' : '▼ BAIXA-MAR'} #{idx + 1}
+                    {evt.type === 'high' ? '▲ PREAMAR' : '▼ BAIXA-MAR'} #{idx + 1}
                   </span>
                   <span className="text-xl font-black text-white block mt-0.5">{evt.time}</span>
                   <span className="text-sm font-bold text-emerald-400">{adjustedH} metros</span>
