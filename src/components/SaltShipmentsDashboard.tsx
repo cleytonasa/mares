@@ -70,33 +70,6 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
     };
   }, [timelineMonth]);
 
-  // Official Salineira Breakdown Summary for the active timeline month (matches official INTERSAL document)
-  const timelineSalineiraSummary = useMemo(() => {
-    const list = timelineVessels.all;
-    const salinorVessels = list.filter((v) => v.shipper === 'SALINOR');
-    const sdbVessels = list.filter((v) => v.shipper === 'SDB');
-
-    const salinorSc = salinorVessels.reduce((acc, v) => acc + v.scVolumeTons, 0);
-    const salinorSq = salinorVessels.reduce((acc, v) => acc + v.sqVolumeTons, 0);
-    const salinorTotal = salinorVessels.reduce((acc, v) => acc + v.totalVolumeTons, 0);
-
-    const sdbSc = sdbVessels.reduce((acc, v) => acc + v.scVolumeTons, 0);
-    const sdbSq = sdbVessels.reduce((acc, v) => acc + v.sqVolumeTons, 0);
-    const sdbTotal = sdbVessels.reduce((acc, v) => acc + v.totalVolumeTons, 0);
-
-    return {
-      salinorSc,
-      salinorSq,
-      salinorTotal,
-      sdbSc,
-      sdbSq,
-      sdbTotal,
-      totalSc: salinorSc + sdbSc,
-      totalSq: salinorSq + sdbSq,
-      grandTotal: salinorTotal + sdbTotal,
-    };
-  }, [timelineVessels]);
-
   // Filtered vessels calculation
   const filteredVessels = useMemo(() => {
     return SALT_SHIPMENTS_2026.filter((v) => {
@@ -646,85 +619,6 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
               </div>
             </div>
           )}
-
-          {/* Tabela Oficial por Salineira INTERSAL (Conforme line-up oficial) */}
-          <div className="mt-4 pt-3.5 border-t border-slate-800">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2 px-1">
-              <div className="flex items-center gap-2">
-                <Factory className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-bold text-white uppercase tracking-wider">
-                  Resumo Oficial por Salineira • {timelineMonthInfo.monthName} / 2026
-                </span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-mono">
-                  INTERSAL (TERMISA)
-                </span>
-              </div>
-              <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-                <Clock className="w-3 h-3 text-cyan-400" />
-                Atualizado em: {LINEUP_LAST_UPDATED}
-              </span>
-            </div>
-
-            <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/80 shadow-md">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-mono text-[10px] uppercase bg-slate-900/60">
-                    <th className="py-2.5 px-3 font-bold">Salineira</th>
-                    <th className="py-2.5 px-3 text-right font-bold text-cyan-300">Total Embarque SC (t)</th>
-                    <th className="py-2.5 px-3 text-right font-bold text-emerald-300">Total Embarque SQ (t)</th>
-                    <th className="py-2.5 px-3 text-right font-bold text-white">Total Geral (t)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
-                  {/* SALINOR */}
-                  <tr className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-cyan-400 font-sans">
-                      SALINOR
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-slate-200">
-                      {timelineSalineiraSummary.salinorSc.toLocaleString('pt-BR')}
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-emerald-400">
-                      {timelineSalineiraSummary.salinorSq.toLocaleString('pt-BR')}
-                    </td>
-                    <td className="py-2.5 px-3 text-right font-bold text-white">
-                      {timelineSalineiraSummary.salinorTotal.toLocaleString('pt-BR')}
-                    </td>
-                  </tr>
-                  {/* SDB */}
-                  <tr className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-2.5 px-3 font-bold text-amber-400 font-sans">
-                      SDB (Diamante Branco)
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-slate-200">
-                      {timelineSalineiraSummary.sdbSc.toLocaleString('pt-BR')}
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-emerald-400">
-                      {timelineSalineiraSummary.sdbSq.toLocaleString('pt-BR')}
-                    </td>
-                    <td className="py-2.5 px-3 text-right font-bold text-white">
-                      {timelineSalineiraSummary.sdbTotal.toLocaleString('pt-BR')}
-                    </td>
-                  </tr>
-                  {/* TOTAL */}
-                  <tr className="bg-slate-900/90 font-bold border-t border-slate-700">
-                    <td className="py-2.5 px-3 text-white uppercase tracking-wider font-sans">
-                      Total {timelineMonthInfo.monthName}
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-cyan-300">
-                      {timelineSalineiraSummary.totalSc.toLocaleString('pt-BR')}
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-emerald-300">
-                      {timelineSalineiraSummary.totalSq.toLocaleString('pt-BR')}
-                    </td>
-                    <td className="py-2.5 px-3 text-right text-cyan-400 text-sm font-black">
-                      {timelineSalineiraSummary.grandTotal.toLocaleString('pt-BR')} t
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       </div>
 
