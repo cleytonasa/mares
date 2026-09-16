@@ -770,16 +770,16 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
   {
     id: 'sdb2026004',
     visitCode: 'SDB2026004',
-    vesselName: 'TBN',
+    vesselName: 'SUNLIGHT',
     loaMeters: 0,
     dwt: 0,
-    eta: '18/09/2026 00:01',
-    etb: '18/09/2026 09:00',
-    etd: '20/09/2026 15:00',
+    eta: '20/09/2026 00:01',
+    etb: '20/09/2026 09:00',
+    etd: '22/09/2026 12:00',
     status: 'Previsto',
-    scVolumeTons: 28000,
+    scVolumeTons: 28100,
     sqVolumeTons: 0,
-    totalVolumeTons: 28000,
+    totalVolumeTons: 28100,
     trafficType: 'EXP',
     trafficLabel: 'Exportação',
     shipper: 'SDB',
@@ -790,16 +790,16 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
   {
     id: 'sln2026032',
     visitCode: 'SLN2026032',
-    vesselName: 'TBN',
+    vesselName: 'LAKE',
     loaMeters: 0,
     dwt: 0,
     eta: '23/09/2026 00:01',
     etb: '23/09/2026 09:00',
-    etd: '26/09/2026 12:00',
+    etd: '25/09/2026 09:00',
     status: 'Previsto',
-    scVolumeTons: 45000,
+    scVolumeTons: 20000,
     sqVolumeTons: 0,
-    totalVolumeTons: 45000,
+    totalVolumeTons: 20000,
     trafficType: 'EXP',
     trafficLabel: 'Exportação',
     shipper: 'SALINOR',
@@ -810,16 +810,16 @@ export const SALT_SHIPMENTS_2026: SaltVesselRecord[] = [
   {
     id: 'sln2026033',
     visitCode: 'SLN2026033',
-    vesselName: 'TBN',
+    vesselName: 'MARCOS DIAS',
     loaMeters: 0,
     dwt: 0,
-    eta: '25/09/2026 00:01',
-    etb: '26/09/2026 14:00',
-    etd: '30/09/2026 15:00',
+    eta: '28/09/2026 00:01',
+    etb: '28/09/2026 09:00',
+    etd: '02/10/2026 15:00',
     status: 'Previsto',
-    scVolumeTons: 43000,
+    scVolumeTons: 43500,
     sqVolumeTons: 0,
-    totalVolumeTons: 43000,
+    totalVolumeTons: 43500,
     trafficType: 'CBT',
     trafficLabel: 'Cabotagem',
     shipper: 'SALINOR',
@@ -1034,21 +1034,21 @@ export const MONTHLY_SALT_SUMMARIES: MonthlySaltSummary[] = [
     concludedTotalVolume: 34700,
     concludedScTotal: 19400,
     concludedSqTotal: 15300,
-    scTotal: 135400,
+    scTotal: 111000,
     sqTotal: 15300,
-    totalVolume: 150700,
-    salinorVolume: 122700,
-    sdbVolume: 28000,
+    totalVolume: 126300,
+    salinorVolume: 98200,
+    sdbVolume: 28100,
     salinorConcludedVolume: 34700,
     sdbConcludedVolume: 0,
-    expVolume: 73000,
-    cbtVolume: 77700,
+    expVolume: 48100,
+    cbtVolume: 78200,
     expConcludedVolume: 0,
     cbtConcludedVolume: 34700,
   },
 ];
 
-export const LINEUP_LAST_UPDATED = '10/09/2026 09:35';
+export const LINEUP_LAST_UPDATED = '16/09/2026 20:45';
 
 export const OVERALL_TOTALS = {
   // Total Embarcado Concluído (Janeiro a Setembro 2026)
@@ -1076,7 +1076,7 @@ export const OVERALL_TOTALS = {
   // Programação e Operação
   operatingTotalTons: 0, // Terminal livre no momento
   operatingVessels: 0,
-  plannedTotalTons: 116000, // 3 navios TBNs previstos (28k + 45k + 43k)
+  plannedTotalTons: 91600, // 3 navios previstos (28.100 + 20.000 + 43.500)
   plannedVessels: 3,
-  totalProgrammedTons: 1368219, // 1.252.219 (Concluídos) + 0 (Em operação) + 116.000 (Previstos)
+  totalProgrammedTons: 1343819, // 1.252.219 (Concluídos) + 0 (Em operação) + 91.600 (Previstos)
 };

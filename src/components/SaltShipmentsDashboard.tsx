@@ -405,7 +405,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                           <span>({v.trafficType})</span>
                           <span>•</span>
                           <span className="text-slate-400">
-                            {v.loaMeters > 0 ? `${v.loaMeters.toFixed(1)}m LOA` : 'LOA a definir (TBN)'} • {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'DWT a definir'}
+                            {v.loaMeters > 0 ? `${v.loaMeters.toFixed(1)}m LOA` : 'LOA a definir'} • {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'DWT a definir'}
                           </span>
                         </div>
                       </div>
@@ -489,7 +489,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                           <span>({v.trafficType})</span>
                           <span>•</span>
                           <span className="text-slate-400">
-                            {v.loaMeters > 0 ? `${v.loaMeters.toFixed(1)}m LOA` : 'LOA a definir (TBN)'} • {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'DWT a definir'}
+                            {v.loaMeters > 0 ? `${v.loaMeters.toFixed(1)}m LOA` : 'LOA a definir'} • {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'DWT a definir'}
                           </span>
                         </div>
                       </div>
@@ -573,7 +573,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                           <span>({v.trafficType})</span>
                           <span>•</span>
                           <span className="text-slate-400">
-                            {v.loaMeters > 0 ? `${v.loaMeters.toFixed(1)}m LOA` : 'LOA a definir (TBN)'} • {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'DWT a definir'}
+                            {v.loaMeters > 0 ? `${v.loaMeters.toFixed(1)}m LOA` : 'LOA a definir'} • {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'DWT a definir'}
                           </span>
                         </div>
                       </div>
@@ -1562,7 +1562,7 @@ export const SaltShipmentsDashboard: React.FC<SaltShipmentsDashboardProps> = () 
                         {v.loaMeters > 0 ? `${v.loaMeters.toFixed(2)} m` : '-'}
                       </div>
                       <div className="text-[10px] text-slate-400 font-mono">
-                        {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'A definir (TBN)'}
+                        {v.dwt > 0 ? `${v.dwt.toLocaleString('pt-BR')} DWT` : 'A definir'}
                       </div>
                     </td>
 
